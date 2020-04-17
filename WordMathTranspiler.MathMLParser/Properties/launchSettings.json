@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "WordMathTranspiler.MathMLParser": {
+      "commandName": "Project",
+      "commandLineArgs": "./Resources/TestData.xml"
+    }
+  }
+}

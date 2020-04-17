@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "WordMathTranspiler.DocumentParser": {
+      "commandName": "Project",
+      "commandLineArgs": "./Resources/A.docx"
+    }
+  }
+}

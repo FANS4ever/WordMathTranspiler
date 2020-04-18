@@ -27,7 +27,7 @@ namespace WordMathTranspiler.MathMLParser
             var statements = doc.Elements().ToList();
 
             // temp for testing 2 is broken
-            var el = statements[1];
+            var el = statements[6];
             var parsedTree = ParseStatement(el);
 
             Console.WriteLine(parsedTree.PrettyPrint(0));
@@ -93,38 +93,37 @@ namespace WordMathTranspiler.MathMLParser
                         continue;
                     // Mo - assignment operator and binary operators
                     case "mo":
-                        if (cToken.Value == "(") // Handle brackets
+                        if (cToken.Value == "(")
                         {
-                            var closeIndex = tokens.FindIndex((x) => x.Name.LocalName == "mo" && x.Value == ")");
-                            if (closeIndex == -1)
-                            {
-                                throw new Exception("Missing closing bracket");
-                            }
-                            else
-                            {
-                                // Parses brackets as sub expression
-                                stack.Add(ParseExpression(tokens.GetRange(i + 1, closeIndex - i - 1)));
-                                // Push index to continue point
-                                i = closeIndex;
-                                continue;
-                            }
+                            // Opening bracket signifies a new term
+                            stack.Add(ParseTerm(tokens, ref i));
+                            continue;
+                        } 
+                        else if (cToken.Value == ")")
+                        {
+                            // Closing bracket cant appear because opening bracket parses term
+                            throw new Exception("Unexpected closing bracket!");
                         }
 
+                        //Handle binary operations
                         if (i + 1 < tokens.Count)
                         {
                             switch (cToken.Value)
                             {
                                 case "*":
                                 case "/":
-                                    var mul = CreateMultiplicationTree(stack); 
-                                    stack.Clear(); // Clear list because we parsed it to one node
-                                    // Pushes index to next element because we use it in creating node
-                                    stack.Add(new BinOpNode(mul, cToken.Value, ParseExpression(tokens[++i])));
+                                    var mul = CreateMultiplicationTree(stack);
+                                    // Clear list because we parsed it to one node
+                                    stack.Clear(); 
+                                    // Parse the next element as a term and continue loop
+                                    // Dont use recursion to preserve order of operations
+                                    stack.Add(new BinOpNode(mul, cToken.Value, ParseTerm(tokens.Skip(++i).ToList(), ref i)));
                                     continue;
                                 case "+":
                                 case "-":
-                                    // Return because left side argument handles the rest of the elements
+                                    // Return because right side argument handles the rest of the elements
                                     // No need to clear list like in * and / because we return
+                                    // Recursion preserves order of operations
                                     return new BinOpNode(CreateMultiplicationTree(stack), cToken.Value, ParseExpression(tokens.Skip(i + 1).ToList()));
                                 default:
                                     throw new Exception("Unsupported operation");
@@ -149,6 +148,42 @@ namespace WordMathTranspiler.MathMLParser
             // No need to clear list because we return
             return CreateMultiplicationTree(stack);
         }
+
+        /// <summary>
+        /// Handles brackets
+        /// </summary>
+        /// <param name="tokens"></param>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        private static Node ParseTerm(List<XElement> tokens, ref int index)
+        {
+            if (tokens.Count == 0)
+            {
+                return new EmptyNode();
+            }
+
+            var cToken = tokens[0];
+            if (cToken.Value == "(") // Handle brackets
+            {
+                var closeIndex = tokens.FindIndex((x) => x.Name.LocalName == "mo" && x.Value == ")");
+                if (closeIndex == -1)
+                {
+                    throw new Exception("Missing closing bracket");
+                }
+                else
+                {
+                    // Push index to term end
+                    index += closeIndex;
+                    // Parse term as expression
+                    return ParseExpression(tokens.GetRange(1, closeIndex - 1));
+                }
+            }
+            else
+            {
+                return ParseExpression(tokens[0]);
+            }
+        }
+
 
         /// <summary>
         /// Handles mrow elements. Mrow elements contain statements. A math function is also a statement (egzample: Sin(x))

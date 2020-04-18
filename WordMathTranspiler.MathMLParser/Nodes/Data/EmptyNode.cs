@@ -9,7 +9,7 @@
 
         public override string PrettyPrint(int indent, bool useVerticalSeperator = false, int seperatorIndent = 0)
         {
-            return "EmptyNode";
+            return "(EmptyNode)";
         }
     }
 }

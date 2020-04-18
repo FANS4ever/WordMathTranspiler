@@ -8,6 +8,12 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
     {
         public Node baseEl { get; set; }
         public Node supEl { get; set; }
+
+        /// <summary>
+        /// Remove this node and use InvocationNode instead
+        /// </summary>
+        /// <param name="baseEl"></param>
+        /// <param name="supEl"></param>
         public SupNode(Node baseEl, Node supEl)
         {
             this.baseEl = baseEl;

@@ -105,7 +105,7 @@ namespace WordMathTranspiler.DocumentParser
                         }
                     }
                     data = data.Replace(Environment.NewLine, Environment.NewLine + new String(' ', 2)); // Add indentation
-                    return data + Environment.NewLine + '<' + rootNodeName + "/>";
+                    return data + Environment.NewLine + "</" + rootNodeName + '>';
                 }
             }
             return "";

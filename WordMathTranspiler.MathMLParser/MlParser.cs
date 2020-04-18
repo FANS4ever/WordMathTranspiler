@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Xml.Linq;
 using WordMathTranspiler.MathMLParser.Nodes;
 using WordMathTranspiler.MathMLParser.Nodes.Data;
@@ -23,10 +24,10 @@ namespace WordMathTranspiler.MathMLParser
 
         public Node Parse(XElement doc)
         {
-            var statements = doc.Elements();
+            var statements = doc.Elements().ToList();
 
             // temp for testing 2 is broken
-            var el = statements.ElementAt(0);
+            var el = statements[1];
             var parsedTree = ParseStatement(el);
 
             Console.WriteLine(parsedTree.PrettyPrint(0));
@@ -34,70 +35,125 @@ namespace WordMathTranspiler.MathMLParser
             return parsedTree;
         }
 
-        private static Node ParseStatement(XElement tokenNode)
+        private static Node ParseStatement(XElement token)
         {
-            if (tokenNode.Name.LocalName == "math")
-            {
-                return ParseStatement(tokenNode.Elements());
-            }
-            else
-            {
-                return ParseStatement(Enumerable.Repeat(tokenNode, 1));
-            }
-        }
-
-        private static Node ParseStatement(IEnumerable<XElement> tokenNodes)
-        {
-            if (tokenNodes == null)
+            if (token == null)
             {
                 throw new ArgumentNullException();
             }
 
-            List<Node> processedNodes = new List<Node>();
-            var el = tokenNodes;
-            int elCount = tokenNodes.Count();
-            for (int i = 0; i < elCount; i++)
+            // Left side of assignment
+            var subTokens = token.Elements().ToList();
+            if (subTokens.Count >= 3 && 
+                subTokens[0].Name.LocalName.Equals("mi") &&
+                subTokens[1].Name.LocalName.Equals("mo"))
             {
-                var currentXNode = el.ElementAtOrDefault(i);
-                switch (currentXNode.Name.LocalName)
+                // Test if value exists
+                return new AssignNode(
+                    variable: new VarNode(subTokens[0].Value),
+                    expression: ParseExpression(subTokens.Skip(2).ToList())
+                );
+            }
+            else
+            {
+                Console.WriteLine("Something is wrong in left side of expression");
+                return new EmptyNode();
+            }
+        }
+
+        private static Node ParseExpression(XElement token)
+        {
+            return ParseExpression(new List<XElement>() { token });
+        }
+
+        private static Node ParseExpression(List<XElement> tokens)
+        {
+            if (tokens.Count == 0)
+            {
+                return new EmptyNode();
+            }
+
+            // Used to make multiplication tree
+            List<Node> stack = new List<Node>();
+
+            // Go through all sub tokens
+            for (int i = 0; i < tokens.Count; i++)
+            {
+                // Current token (Because getting element in list is O(n))
+                var cToken = tokens[i];
+                switch (cToken.Name.LocalName)
                 {
-                    // Expanded statement
+                    // Mrow - groups elements (Found when calling math function)
                     case "mrow":
-                        processedNodes.Add(ParseMrow(currentXNode));
-                        break;
+                        stack.Add(ParseMrow(cToken));
+                        continue;
+                    // Msup - element power (x^2)
                     case "msup":
-                        processedNodes.Add(ParseMSUP(currentXNode));
-                        break;
-                    // Operator
+                        stack.Add(ParseMSUP(cToken));
+                        continue;
+                    // Mo - assignment operator and binary operators
                     case "mo":
-                        if (i + 1 < elCount)
+                        if (cToken.Value == "(") // Handle brackets
                         {
-                            // If we start parsing an operator we let the next instance of ParseStatement handle
-                            // the rest of the tokenNodes thats why we return here.
-                            return ParseMO(CreateMultiplicationTree(processedNodes), currentXNode.Value, ParseStatement(el.Skip(i + 1)));
+                            var closeIndex = tokens.FindIndex((x) => x.Name.LocalName == "mo" && x.Value == ")");
+                            if (closeIndex == -1)
+                            {
+                                throw new Exception("Missing closing bracket");
+                            }
+                            else
+                            {
+                                // Parses brackets as sub expression
+                                stack.Add(ParseExpression(tokens.GetRange(i + 1, closeIndex - i - 1)));
+                                // Push index to continue point
+                                i = closeIndex;
+                                continue;
+                            }
+                        }
+
+                        if (i + 1 < tokens.Count)
+                        {
+                            switch (cToken.Value)
+                            {
+                                case "*":
+                                case "/":
+                                    var mul = CreateMultiplicationTree(stack); 
+                                    stack.Clear(); // Clear list because we parsed it to one node
+                                    // Pushes index to next element because we use it in creating node
+                                    stack.Add(new BinOpNode(mul, cToken.Value, ParseExpression(tokens[++i])));
+                                    continue;
+                                case "+":
+                                case "-":
+                                    // Return because left side argument handles the rest of the elements
+                                    // No need to clear list like in * and / because we return
+                                    return new BinOpNode(CreateMultiplicationTree(stack), cToken.Value, ParseExpression(tokens.Skip(i + 1).ToList()));
+                                default:
+                                    throw new Exception("Unsupported operation");
+                            }
                         }
                         else
                         {
                             throw new Exception("Unexpected end of input");
                         }
-                    // Identifier
+                    // Mi - identifier element (function name or variable name)
                     case "mi":
-                        processedNodes.Add(ParseMIVar(currentXNode));
-                        break;
-                    // Number
+                        stack.Add(ParseMIVar(cToken));
+                        continue;
+                    // Mn - number element
                     case "mn":
-                        processedNodes.Add(ParseMN(currentXNode));
-                        break;
+                        stack.Add(ParseMN(cToken));
+                        continue;
                     default:
-                        throw new NotImplementedException("Unsupported node type " + currentXNode.Name.LocalName);
+                        throw new NotImplementedException("Unsupported node type " + cToken.Name.LocalName);
                 }
             }
-            return CreateMultiplicationTree(processedNodes);
+            // No need to clear list because we return
+            return CreateMultiplicationTree(stack);
         }
-
 
         /// <summary>
         /// Handles mrow elements. Mrow elements contain statements. A math function is also a statement (egzample: Sin(x))
+        /// 
+        /// Add support for multiple parameters?
         /// </summary>
         /// <param name="el"></param>
         /// <returns></returns>
@@ -112,10 +168,8 @@ namespace WordMathTranspiler.MathMLParser
                        val == "coth";
             }
 
-
             var children = el.Elements();
             int childCount = children.Count();
-
             switch (childCount)
             {
                 case 0:
@@ -125,65 +179,27 @@ namespace WordMathTranspiler.MathMLParser
                 case 2:
                     if (isMathFunction(children.First().Value))
                     {
-                        return new InvocationNode(children.First().Value, ParseStatement(Enumerable.Repeat(children.ElementAt(1), 1)));
+                        return new InvocationNode(
+                            children.First().Value, 
+                            ParseStatement(children.ElementAt(1))
+                        );
                     }
                     else
                     {
-                        return ParseStatement(children);
+                        return ParseExpression(children.ToList());
                     }
                 default:
                     if (isMathFunction(children.First().Value))
                     {
                         return new InvocationNode(
-                            children.First().Value, 
-                            ParseStatement(children.Skip(2))
+                            children.First().Value,
+                            ParseExpression(children.Skip(2).ToList())
                         );
                     }
                     else
                     {
-                        return ParseStatement(children);
+                        return ParseExpression(children.ToList());
                     }
-            }
-        }
-
-        /// <summary>
-        /// Handle mo elements
-        /// </summary>
-        /// <param name="left"></param>
-        /// <param name="op"></param>
-        /// <param name="right"></param>
-        /// <returns></returns>
-        private static Node ParseMO(Node left, string op, Node right)
-        {
-            if (left == null || left is EmptyNode)
-            {
-                throw new ArgumentException("Left argument is empty!");
-            }
-
-            if (right == null || right is EmptyNode)
-            {
-                throw new ArgumentException("Right argument is empty!");
-            }
-
-            switch (op)
-            {
-                case "=":
-                case ":=":
-                    if (left is VarNode)
-                    {
-                        return new AssignNode(left as VarNode, right);
-                    }
-                    else
-                    {
-                        throw new ArgumentException("Left argument is not a variable.");
-                    }
-                case "+":
-                case "-":
-                case "*":
-                case "/":
-                    return new BinOpNode(left, op, right);
-                default:
-                    throw new NotImplementedException();
             }
         }
 
@@ -264,14 +280,13 @@ namespace WordMathTranspiler.MathMLParser
         /// <returns></returns>
         private static Node CreateMultiplicationTree(List<Node> list)
         {
+            Node result = new EmptyNode();
             switch (list.Count)
             {
-                case 0:
-                    return new EmptyNode();
                 case 1:
-                    return list[0];
+                    result = list[0];
+                    break;
                 default:
-                    Node result = new EmptyNode();
                     int notEmptyIndex = -1;
                     for (int i = 1; i < list.Count; i++)
                     {
@@ -288,7 +303,7 @@ namespace WordMathTranspiler.MathMLParser
 
                             if (notEmptyIndex > -1) // If we have a non empty node waiting
                             {
-                                result = ParseMO(list[notEmptyIndex], "*", list[i]);
+                                result = new BinOpNode(list[notEmptyIndex], "*", list[i]);
                                 notEmptyIndex = -1;
                             }
                             else // If no nodes are waiting
@@ -297,7 +312,7 @@ namespace WordMathTranspiler.MathMLParser
                                 {
                                     continue;
                                 }
-                                result = ParseMO(list[i - 1], "*", list[i]);
+                                result = new BinOpNode(list[i - 1], "*", list[i]);
                             }
                         }
                         else
@@ -307,12 +322,13 @@ namespace WordMathTranspiler.MathMLParser
                                 continue;
                             }
                             BinOpNode temp = result as BinOpNode;
-                            temp.right = ParseMO(temp.right, "*", list[i]);
+                            temp.right = new BinOpNode(temp.right, "*", list[i]);
                             result = temp;
                         }
                     }
-                    return result;
+                    break;
             }
+            return result;
         }
     }
 }

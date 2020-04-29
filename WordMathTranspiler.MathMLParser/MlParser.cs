@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Windows.Markup;
+using System.Xml;
 using System.Xml.Linq;
 using WordMathTranspiler.MathMLParser.Nodes;
 using WordMathTranspiler.MathMLParser.Nodes.Data;
@@ -13,7 +13,11 @@ namespace WordMathTranspiler.MathMLParser
     {
         public MlParser() {}
 
-        public Node Parse(XElement doc)
+        public Node Parse(string path)
+        {
+            return Parse(XDocument.Load(path, LoadOptions.SetLineInfo).Root);
+        }
+        private Node Parse(XElement doc)
         {
             var statements = doc.Elements().ToList();
 
@@ -28,10 +32,12 @@ namespace WordMathTranspiler.MathMLParser
                     parsedExpression = parsedTreeRoot;
                     continue;
                 }
-                (parsedExpression as StatementNode).Next = ParseStatement(statements[i], symbolTable); //ParseStatement can return EmptyNode
-                parsedExpression = (parsedExpression as StatementNode).Next; // Add sanity checks
+                (parsedExpression as StatementNode).Next = ParseStatement(statements[i], symbolTable);
+                if ((parsedExpression as StatementNode).Next is StatementNode)
+                {
+                    parsedExpression = (parsedExpression as StatementNode).Next;
+                }
             }
-            Console.WriteLine(parsedTreeRoot.Print());
 
             return parsedTreeRoot;
         }
@@ -40,7 +46,7 @@ namespace WordMathTranspiler.MathMLParser
         {
             if (token == null)
             {
-                throw new ArgumentNullException();
+                return new EmptyNode();
             }
     
             var subTokens = token.Elements().ToList();
@@ -290,7 +296,12 @@ namespace WordMathTranspiler.MathMLParser
             }
             else
             {
-                Console.WriteLine("Warning: Possible error in syntax empty identifier element in XML");
+                IXmlLineInfo info = el;
+                if (info.HasLineInfo())
+                {
+                    Console.WriteLine("Warning: Possible error in syntax empty identifier element in XML. Line: {0}", info.LineNumber);
+                }
+
                 return new EmptyNode();
             }
         }
@@ -321,7 +332,11 @@ namespace WordMathTranspiler.MathMLParser
             }
             else
             {
-                Console.WriteLine("Warning: Possible error in syntax empty number element in XML");
+                IXmlLineInfo info = el;
+                if (info.HasLineInfo())
+                {
+                    Console.WriteLine("Warning: Possible error in syntax empty number element in XML. Line: {0}", info.LineNumber);
+                }
                 return new EmptyNode();
             }
         }

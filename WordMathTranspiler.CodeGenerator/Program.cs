@@ -9,7 +9,7 @@ namespace WordMathTranspiler.CodeGenerator
         static void Main(string[] args)
         {
             var mlParser = new MlParser();
-            Node root = mlParser.Parse(XDocument.Load("E:/Libraries/Desktop/BBP/WordMathTranspiler/WordMathTranspiler.MathMLParser/Resources/TestData.xml").Root);
+            Node root = mlParser.Parse("E:/Libraries/Desktop/BBP/WordMathTranspiler/WordMathTranspiler.MathMLParser/Resources/TestData.xml");
             CodeGenerator cGen = new CodeGenerator();
             var tree = cGen.Generate(root);
             CodeCompiler.GenerateExecutable(new[] { tree });

@@ -44,7 +44,6 @@ namespace WordMathTranspiler.CodeGenerator
 
                 if (result.Success)
                 {
-                    //generate other files here
                     using (FileStream configStream = new FileStream(Path.Combine(resultDir, "program.runtimeconfig.json"), FileMode.Create))
                     {
                         configStream.Write(Encoding.UTF8.GetBytes(GenerateRuntimeConfig()));
@@ -67,7 +66,6 @@ namespace WordMathTranspiler.CodeGenerator
                 }
             }
         }
-
 
         /// <summary>
         /// Update to use that reference resolver thing mentioned in github

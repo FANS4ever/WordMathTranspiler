@@ -3,7 +3,6 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Editing;
 using System;
 using System.Collections.Generic;
-using WordMathTranspiler.MathMLParser;
 using WordMathTranspiler.MathMLParser.Nodes;
 using WordMathTranspiler.MathMLParser.Nodes.Data;
 using WordMathTranspiler.MathMLParser.Nodes.Structure;
@@ -12,7 +11,6 @@ namespace WordMathTranspiler.CodeGenerator
 {
     public class CodeGenerator
     {
-
         private AdhocWorkspace workspace;
         private SyntaxGenerator generator;
 
@@ -29,20 +27,47 @@ namespace WordMathTranspiler.CodeGenerator
 
         public SyntaxTree Generate(Node root)
         {
-            List<SyntaxNode> declared = new List<SyntaxNode>();
-            var test = RecursiveVisit(root, ref declared);
-            declared.Add(test);
-            declared.Add(CreateConsole(this.generator, RecursivePrintStatement(root)));
-            declared.Add(CreateConsole(this.generator, "A = {0}", new string[] { "A" }));
-
-            var mainMethodNode = CreateMain(this.generator, declared);
-            var classNode = CreateClass(this.generator, "Program", new SyntaxNode[] { mainMethodNode });
-            var namespaceNode = this.generator.NamespaceDeclaration("ThisIsTest", classNode);
+            var namespaceNode   = generator.NamespaceDeclaration("TranspiledMML", BuildProgram(root));
             var usingDirectives = generator.NamespaceImportDeclaration("System");
-            var compilationUnit = this.generator.CompilationUnit(usingDirectives, namespaceNode).NormalizeWhitespace();
+            var compilationUnit = generator.CompilationUnit(usingDirectives, namespaceNode).NormalizeWhitespace();
 
             Console.WriteLine(compilationUnit);
             return compilationUnit.SyntaxTree;
+        }
+
+        private SyntaxNode BuildProgram(Node root)
+        {
+            if (root is StatementNode)
+            {
+                List<SyntaxNode> declared = new List<SyntaxNode>();
+                var currentStatement = (root as StatementNode);
+
+                do
+                {
+                    declared.Add(RecursiveVisit(currentStatement.Body, ref declared));
+                    declared.Add(CreateConsole(generator, RecursivePrintStatement(currentStatement.Body)));
+
+                    if (currentStatement.Type == StatementNode.StatementType.DeclarationStatement)
+                    {
+                        string varName = (currentStatement.Body as AssignNode).Var.Name;
+                        declared.Add(CreateConsole(generator, varName + " = {0}", new string[] { varName }));
+                    }
+                    else
+                    {
+                        declared.Add(CreateConsole(generator, "A = {0}", new string[] { "A" }));
+                    }
+
+                    currentStatement = currentStatement.Next as StatementNode;
+                } while (currentStatement is StatementNode);
+
+                var mainMethodNode = CreateEntryPoint(generator, declared);
+                var classNode = CreateClass(generator, "Program", new SyntaxNode[] { mainMethodNode });
+                return classNode;
+            }
+            else
+            {
+                throw new Exception("Expected root StatementNode but got " + root.GetType());
+            }
         }
 
         /// <summary>
@@ -54,41 +79,57 @@ namespace WordMathTranspiler.CodeGenerator
             switch (root)
             {
                 case EmptyNode emptyNode:
-                    throw new NotImplementedException();
+                    throw new Exception("Unexpected empty node inside statement");
 
                 case NumNode numNode:
                     return generator.LiteralExpression(numNode.Value);
 
-                case FloatNode floatNode:
-                    return generator.LiteralExpression(floatNode.Value);
-
-                case VarNode varNode:
-                    return this.generator.LocalDeclarationStatement(
-                        generator.TypeExpression(SpecialType.System_Object),
-                        varNode.Name
-                    );
-
                 case AssignNode assignNode:
-                    if (assignNode.variable is VarNode)
-                    {
-                        var variableDeclaration = RecursiveVisit(assignNode.variable, ref declared);
-                        declared.Add(variableDeclaration);
-
-                        var identifier = this.generator.IdentifierName((assignNode.variable as VarNode).Name);
-                        return generator.AssignmentStatement(identifier, RecursiveVisit(assignNode.expression, ref declared));
-                    }
-                    else
-                    {
-                        throw new Exception("Can't assign value to non variable.");
-                    }
-                case InvocationNode mathFNode:
-                    //RecursiveVisit(mathFNode.arg);
-                    throw new NotImplementedException();
-                case BinOpNode operatorNode:
-                    return generator.AddExpression(
-                        RecursiveVisit(operatorNode.left, ref declared),
-                        RecursiveVisit(operatorNode.right, ref declared)
+                    return generator.LocalDeclarationStatement(
+                        generator.TypeExpression(assignNode.IsFloatPointOperation() ? SpecialType.System_Double : SpecialType.System_Int64),
+                        assignNode.Var.Name,
+                        RecursiveVisit(assignNode.Expr, ref declared)
                     );
+                case InvocationNode mathFNode:
+                    var identifier = generator.IdentifierName("Math");
+                    var expression = generator.MemberAccessExpression(identifier, "Sin");
+                    SyntaxList<SyntaxNode> arguments = new SyntaxList<SyntaxNode>();
+                    foreach (var arg in mathFNode.Args)
+                    {
+                        //var nameExpression = generator.IdentifierName(argName);
+                        var nameArg = generator.Argument(RecursiveVisit(arg, ref declared));
+                        arguments = arguments.Add(nameArg);
+                    }
+                    return generator.InvocationExpression(expression, arguments);
+                case BinOpNode operatorNode:
+                    switch (operatorNode.Op)
+                    {
+                        case "+":
+                            return generator.AddExpression(
+                                RecursiveVisit(operatorNode.LeftExpr, ref declared),
+                                RecursiveVisit(operatorNode.RightExpr, ref declared)
+                            );
+                        case "-":
+                            return generator.SubtractExpression(
+                                RecursiveVisit(operatorNode.LeftExpr, ref declared),
+                                RecursiveVisit(operatorNode.RightExpr, ref declared)
+                            );  
+                        case "*":
+                            return generator.MultiplyExpression(
+                                 RecursiveVisit(operatorNode.LeftExpr, ref declared),
+                                 RecursiveVisit(operatorNode.RightExpr, ref declared)
+                            );
+                        case "/":
+                            return generator.DivideExpression(
+                                generator.CastExpression(
+                                    generator.TypeExpression(SpecialType.System_Double),
+                                    RecursiveVisit(operatorNode.LeftExpr, ref declared)
+                                ),
+                                RecursiveVisit(operatorNode.RightExpr, ref declared)
+                            );
+                        default:
+                            throw new NotImplementedException("Operator " + operatorNode.Op + " is not implemented yet.");
+                    }
                 case SupNode supNode:
                     //RecursiveVisit(supNode.baseEl);
                     //RecursiveVisit(supNode.supEl);
@@ -96,7 +137,6 @@ namespace WordMathTranspiler.CodeGenerator
                 default:
                     throw new NotImplementedException("Node type not implemented yet.");
             }
-
         }
 
         /// <summary>
@@ -110,46 +150,54 @@ namespace WordMathTranspiler.CodeGenerator
             {
                 case EmptyNode emptyNode:
                     return "";
-                case FloatNode floatNode:
-                    return floatNode.Value.ToString();
                 case NumNode numNode:
                     return numNode.Value.ToString();
                 case VarNode varNode:
                     return varNode.Name.ToString();
                 case AssignNode assignNode:
-                    return RecursivePrintStatement(assignNode.variable) + " = " + RecursivePrintStatement(assignNode.expression);
+                    return RecursivePrintStatement(assignNode.Var) + " = " + RecursivePrintStatement(assignNode.Expr);
                 case InvocationNode mathFNode:
-                    return "(" + RecursivePrintStatement(mathFNode.arg) + ")";
+                    string result = mathFNode.Fn + "(";
+                    for (int i = 0; i < mathFNode.Args.Count; i++)
+                    {
+                        var arg = mathFNode.Args[i];
+                        result += RecursivePrintStatement(arg) + (i != mathFNode.Args.Count - 1 ? ", " : "");
+                    }
+                    return result + ")";
                 case BinOpNode operatorNode:
-                    return RecursivePrintStatement(operatorNode.left) + " " + operatorNode.op.ToString() + " " + RecursivePrintStatement(operatorNode.right);
+                    return "(" + RecursivePrintStatement(operatorNode.LeftExpr) + ") " + operatorNode.Op.ToString() + " (" + RecursivePrintStatement(operatorNode.RightExpr) + ")";
                 case SupNode supNode:
-                    return "(" + RecursivePrintStatement(supNode.baseEl) + ")^(" + RecursivePrintStatement(supNode.supEl) + ")"; 
+                    return "(" + RecursivePrintStatement(supNode.Base) + ")^(" + RecursivePrintStatement(supNode.Sup) + ")";
                 default:
                     throw new NotImplementedException("Node type not implemented yet.");
             }
 
         }
 
-        #region SyntaxNode creatio helpers
-        public static SyntaxNode CreateMain(SyntaxGenerator generator, IEnumerable<SyntaxNode> statements)
+        #region SyntaxNode creation helpers
+        /// <summary>
+        /// Creates a syntax node that represents the main method
+        /// </summary>
+        /// <param name="generator"></param>
+        /// <param name="statements"></param>
+        /// <returns></returns>
+        public static SyntaxNode CreateEntryPoint(SyntaxGenerator generator, IEnumerable<SyntaxNode> statements)
         {
             var mainMethod = generator.MethodDeclaration(
                 name: "Main",
-                parameters: null, // Dont set parameters here because it causes error. Use generator.AddParameters instead
-                accessibility: Accessibility.NotApplicable,
                 modifiers: DeclarationModifiers.Static,
                 statements: statements
             );
 
-            generator.AddParameters(
-                mainMethod, 
-                new SyntaxNode[] { 
-                    generator.ParameterDeclaration("args",  generator.ArrayTypeExpression(generator.TypeExpression(SpecialType.System_String))) 
-                }
-            );
-
             return mainMethod;
         }
+        /// <summary>
+        /// Creates a SyntaxNode that represents a class
+        /// </summary>
+        /// <param name="generator"></param>
+        /// <param name="className"></param>
+        /// <param name="members"></param>
+        /// <returns></returns>
         public static SyntaxNode CreateClass(SyntaxGenerator generator, string className, IEnumerable<SyntaxNode> members)
         {
             return generator.ClassDeclaration(
@@ -162,6 +210,13 @@ namespace WordMathTranspiler.CodeGenerator
               members: members
             );
         }
+        /// <summary>
+        /// Creates a syntax node that represents a Console.WriteLine
+        /// </summary>
+        /// <param name="generator"></param>
+        /// <param name="format"></param>
+        /// <param name="argumentNames"></param>
+        /// <returns></returns>
         public static SyntaxNode CreateConsole(SyntaxGenerator generator, object format = null, IEnumerable<string> argumentNames = null)
         {
             var identifier = generator.IdentifierName("Console");

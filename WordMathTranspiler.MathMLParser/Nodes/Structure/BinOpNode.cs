@@ -1,7 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.CodeDom.Compiler;
+using System.IO;
 using System.Text;
-using WordMathTranspiler.MathMLParser.Nodes;
 
 namespace WordMathTranspiler.MathMLParser.Nodes.Structure
 {
@@ -10,29 +9,27 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
     /// </summary>
     public class BinOpNode : Node
     {
-        public Node left { get; set; }
-        public string op {get; set;}
-        public Node right { get; set; }
+        public Node LeftExpr { get; set; }
+        public string Op {get; set;}
+        public Node RightExpr { get; set; }
         public BinOpNode(Node left, string op, Node right)
         {
-            this.left = left;
-            this.op = op;
-            this.right = right;
+            LeftExpr = left;
+            Op = op;
+            RightExpr = right;
         }
 
-        public override string PrettyPrint(int indent, bool useVerticalSeperator = false, int seperatorIndent = 0)
+        public override bool IsFloatPointOperation()
         {
-            int newIndent = indent + 6;
-            string lp = left.PrettyPrint(newIndent, true, seperatorIndent > 0 ? seperatorIndent : indent);
-            string rp = right.PrettyPrint(newIndent, useVerticalSeperator, seperatorIndent);
+            return Op == "/" || LeftExpr.IsFloatPointOperation() || RightExpr.IsFloatPointOperation();
+        }
 
+        public override string Print()
+        {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine('(' + this.op + ')');
-            AdjustSeperator(sb, useVerticalSeperator, indent, seperatorIndent);
-            sb.AppendLine(" ├─L: " + lp);
-            AdjustSeperator(sb, useVerticalSeperator, indent, seperatorIndent);
-            sb.Append(" └─R: " + rp);
-
+            sb.AppendLine("┌ " + Op);
+            sb.AppendLine("├─L: " + IndentHelper(LeftExpr.Print(), vSeperator: true));
+            sb.Append("└─R: " + IndentHelper(RightExpr.Print()));
             return sb.ToString();
         }
     }

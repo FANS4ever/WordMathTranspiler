@@ -1,20 +1,29 @@
-﻿namespace WordMathTranspiler.MathMLParser.Nodes.Data
+﻿using static WordMathTranspiler.MathMLParser.Nodes.Data.NumNode;
+
+namespace WordMathTranspiler.MathMLParser.Nodes.Data
 {
     public class VarNode : Node
     {
+        public NumType Type { get; set; }
         public string Name { get; set; }
+
         /// <summary>
         /// Variable name node.
         /// </summary>
         /// <param name="name">Name of the variable</param>
         public VarNode(string name)
         {
-            this.Name = name;
+            Name = name;
         }
 
-        public override string PrettyPrint(int indent, bool useVerticalSeperator = false, int seperatorIndent = 0)
+        public override bool IsFloatPointOperation()
         {
-            return this.Name;
+            return false;
+        }
+
+        public override string Print()
+        {
+            return Name;
         }
     }
 }

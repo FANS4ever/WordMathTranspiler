@@ -1,30 +1,53 @@
-﻿using System.Text;
+﻿using System.Data;
+using System.Text;
 
 namespace WordMathTranspiler.MathMLParser.Nodes.Structure
 {
-    class StatementNode : Node
+    public class StatementNode : Node
     {
-        public Node left { get; set; }
-        public Node right { get; set; }
-        public StatementNode(Node left, Node right)
+        public enum StatementType
         {
-            this.left = left;
-            this.right = right;
+            None,
+            DeclarationStatement
         }
 
-        public override string PrettyPrint(int indent, bool useVerticalSeperator = false, int seperatorIndent = 0)
+        public StatementType Type {
+            get {
+                switch (Body)
+                {
+                    case AssignNode a:
+                        return StatementType.DeclarationStatement;
+                    default:
+                        return StatementType.None;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Statement body
+        /// </summary>
+        public Node Body { get; set; }
+        /// <summary>
+        /// Next statement in sequence
+        /// </summary>
+        public Node Next { get; set; }
+        public StatementNode(Node body, Node next)
         {
-            int newIndent = indent + 6;
-            string lp = left.PrettyPrint(newIndent, true, seperatorIndent > 0 ? seperatorIndent : indent);
-            string rp = right.PrettyPrint(newIndent, useVerticalSeperator, seperatorIndent);
+            Body = body;
+            Next = next;
+        }
 
+        public override bool IsFloatPointOperation()
+        {
+            return Body.IsFloatPointOperation();
+        }
+
+        public override string Print()
+        {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine("(Statement)");
-            AdjustSeperator(sb, useVerticalSeperator, indent, seperatorIndent);
-            sb.AppendLine(" ├─L: " + lp);
-            AdjustSeperator(sb, useVerticalSeperator, indent, seperatorIndent);
-            sb.Append(" └─R: " + rp);
-
+            sb.AppendLine("┌ Statement type:" + Type.ToString() + " isFloat: " + IsFloatPointOperation());
+            sb.AppendLine("├─L: " + IndentHelper(Body.Print(), vSeperator: true));
+            sb.Append("└─R: " + IndentHelper(Next.Print()));
             return sb.ToString();
         }
     }

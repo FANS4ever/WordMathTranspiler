@@ -7,9 +7,14 @@
         /// </summary>
         public EmptyNode() { }
 
-        public override string PrettyPrint(int indent, bool useVerticalSeperator = false, int seperatorIndent = 0)
+        public override bool IsFloatPointOperation()
         {
-            return "(EmptyNode)";
+            return false;
+        }
+
+        public override string Print()
+        {
+            return "EmptyNode";
         }
     }
 }

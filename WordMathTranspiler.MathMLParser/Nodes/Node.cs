@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Text;
 
 namespace WordMathTranspiler.MathMLParser.Nodes
@@ -9,24 +10,40 @@ namespace WordMathTranspiler.MathMLParser.Nodes
     /// </summary>
     public abstract class Node
     {
-        protected void AdjustSeperator(StringBuilder sb, bool useVerticalSeperator, int indent, int seperatorIndent)
+        /// <summary>
+        /// Adds indentation to multiline strings.
+        /// </summary>
+        /// <param name="src">Input string</param>
+        /// <param name="count">Indentation level (spaces). Default: 5</param>
+        /// <param name="vSeperator">Should the method use the '│' vertical seperator. Default: false</param>
+        /// <returns></returns>
+        protected static string IndentHelper(string src, int count = 5, bool vSeperator = false)
         {
-            if (useVerticalSeperator)
+            string[] split = src.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+            
+            if (split.Length > 1)
             {
-                if (indent < seperatorIndent)
+                string result = split[0];
+                for (int i = 1; i < split.Length; i++)
                 {
-                    throw new Exception("seperatorIndent cant be larger than indent!");
+                    string item = split[i];
+                    if (vSeperator)
+                    {
+                        result += Environment.NewLine + '│' + new string(' ', count - 1) + item;
+                    }
+                    else
+                    {
+                        result += Environment.NewLine + new string(' ', count) + item;
+                    }
                 }
-                var indentAfterSeperator = indent - seperatorIndent;
-                sb.Append(' ', seperatorIndent + 1 > 0 ? seperatorIndent + 1 : 0);
-                sb.Append('|');
-                sb.Append(' ', (indentAfterSeperator - 2) > 0 ? indentAfterSeperator - 2 : 0);
+                return result;
             }
             else
             {
-                sb.Append(' ', indent > 0 ? indent : 0);
+                return split[0];
             }
         }
-        public abstract string PrettyPrint(int indent, bool useVerticalSeperator = false, int seperatorIndent = 0);
+        public abstract string Print();
+        public abstract bool IsFloatPointOperation();
     }
 }

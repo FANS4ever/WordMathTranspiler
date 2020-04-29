@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Metadata.Ecma335;
 using System.Xml.Linq;
 using WordMathTranspiler.MathMLParser.Nodes;
 using WordMathTranspiler.MathMLParser.Nodes.Data;
@@ -9,54 +8,64 @@ using WordMathTranspiler.MathMLParser.Nodes.Structure;
 
 namespace WordMathTranspiler.MathMLParser
 {
-    /// <summary>
-    /// Refactor all node methods to use local variables and to return new nodes
-    /// </summary>
     public class MlParser
     {
-        private Node _root; // Going to rename this to workingNode so we can work on multiple statements
-        private int _nodeCount;
-
-        public MlParser() {
-            this._root = new EmptyNode();
-            this._nodeCount = 0;
-        }
+        public MlParser() {}
 
         public Node Parse(XElement doc)
         {
             var statements = doc.Elements().ToList();
 
-            // temp for testing 2 is broken
-            var el = statements[6];
-            var parsedTree = ParseStatement(el);
+            Node parsedTreeRoot = new EmptyNode();
+            Node parsedExpression = new EmptyNode();
+            Dictionary<string, NumNode.NumType> symbolTable = new Dictionary<string, NumNode.NumType>();
+            for (int i = 0; i < 6; i++)
+            {
+                if (parsedTreeRoot is EmptyNode)
+                {
+                    parsedTreeRoot = ParseStatement(statements[i], symbolTable);
+                    parsedExpression = parsedTreeRoot;
+                    continue;
+                }
+                (parsedExpression as StatementNode).Next = ParseStatement(statements[i], symbolTable); //ParseStatement can return EmptyNode
+                parsedExpression = (parsedExpression as StatementNode).Next; // Add sanity checks
+            }
+            Console.WriteLine(parsedTreeRoot.Print());
 
-            Console.WriteLine(parsedTree.PrettyPrint(0));
-
-            return parsedTree;
+            return parsedTreeRoot;
         }
 
-        private static Node ParseStatement(XElement token)
+        private static Node ParseStatement(XElement token, Dictionary<string, NumNode.NumType> symbolTable)
         {
             if (token == null)
             {
                 throw new ArgumentNullException();
             }
-
-            // Left side of assignment
+    
             var subTokens = token.Elements().ToList();
-            if (subTokens.Count >= 3 && 
+
+            // Test for left side of assignment
+            if (subTokens.Count >= 3 &&
                 subTokens[0].Name.LocalName.Equals("mi") &&
-                subTokens[1].Name.LocalName.Equals("mo"))
+                !subTokens[0].IsEmpty &&
+                subTokens[1].Name.LocalName.Equals("mo") &&
+                !subTokens[1].IsEmpty && subTokens[1].Value == "=")
             {
-                // Test if value exists
-                return new AssignNode(
+
+                var statement = new AssignNode(
                     variable: new VarNode(subTokens[0].Value),
                     expression: ParseExpression(subTokens.Skip(2).ToList())
                 );
+
+                // Add symbol with type
+                // Create class for symbol table? Will need more information for function declarations
+                symbolTable[subTokens[0].Value] = statement.IsFloatPointOperation() ? NumNode.NumType.Float : NumNode.NumType.Int;
+
+                return new StatementNode(statement, new EmptyNode());
             }
             else
             {
-                Console.WriteLine("Something is wrong in left side of expression");
+                Console.WriteLine("Statement type not implemented yet.");
                 return new EmptyNode();
             }
         }
@@ -210,13 +219,13 @@ namespace WordMathTranspiler.MathMLParser
                 case 0:
                     return new EmptyNode();
                 case 1:
-                    return ParseStatement(children.First());
+                    return ParseExpression(children.First());
                 case 2:
                     if (isMathFunction(children.First().Value))
                     {
                         return new InvocationNode(
-                            children.First().Value, 
-                            ParseStatement(children.ElementAt(1))
+                            children.First().Value,
+                            ParseExpression(children.ElementAt(1))
                         );
                     }
                     else
@@ -251,7 +260,7 @@ namespace WordMathTranspiler.MathMLParser
             {
                 var baseEl = supElements.ElementAt(0);
                 var supEl = supElements.ElementAt(1);
-                return new SupNode(ParseStatement(baseEl), ParseStatement(supEl));
+                return new SupNode(ParseExpression(baseEl), ParseExpression(supEl));
             }
             else
             {
@@ -287,14 +296,14 @@ namespace WordMathTranspiler.MathMLParser
             if (!el.IsEmpty)
             {
                 long l;
-                float f;
+                double f;
                 if (long.TryParse(el.Value, out l))
                 {
                     return new NumNode(l);
                 } 
-                else if (float.TryParse(el.Value, out f))
+                else if (double.TryParse(el.Value.Replace(',', '.'), out f))
                 {
-                    return new FloatNode(f);
+                    return new NumNode(f);
                 } 
                 else
                 {
@@ -357,7 +366,7 @@ namespace WordMathTranspiler.MathMLParser
                                 continue;
                             }
                             BinOpNode temp = result as BinOpNode;
-                            temp.right = new BinOpNode(temp.right, "*", list[i]);
+                            temp.RightExpr = new BinOpNode(temp.RightExpr, "*", list[i]);
                             result = temp;
                         }
                     }

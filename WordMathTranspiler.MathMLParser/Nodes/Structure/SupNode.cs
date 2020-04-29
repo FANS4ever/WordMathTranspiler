@@ -1,13 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Text;
 
 namespace WordMathTranspiler.MathMLParser.Nodes.Structure
 {
     public class SupNode : Node
     {
-        public Node baseEl { get; set; }
-        public Node supEl { get; set; }
+        public Node Base { get; set; }
+        public Node Sup { get; set; }
 
         /// <summary>
         /// Remove this node and use InvocationNode instead
@@ -16,22 +14,21 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
         /// <param name="supEl"></param>
         public SupNode(Node baseEl, Node supEl)
         {
-            this.baseEl = baseEl;
-            this.supEl = supEl;
+            this.Base = baseEl;
+            this.Sup = supEl;
         }
-        public override string PrettyPrint(int indent, bool useVerticalSeperator = false, int seperatorIndent = 0)
+
+        public override bool IsFloatPointOperation()
         {
-            int newIndent = indent + 6;
-            string lp = baseEl.PrettyPrint(newIndent, true, seperatorIndent > 0 ? seperatorIndent : indent);
-            string rp = supEl.PrettyPrint(newIndent, useVerticalSeperator, seperatorIndent);
+            return Base.IsFloatPointOperation() || Sup.IsFloatPointOperation();
+        }
 
+        public override string Print()
+        {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine("Sup");
-            AdjustSeperator(sb, useVerticalSeperator, indent, seperatorIndent);
-            sb.AppendLine(" ├─L: " + lp);
-            AdjustSeperator(sb, useVerticalSeperator, indent, seperatorIndent);
-            sb.Append(" └─R: " + rp);
-
+            sb.AppendLine("┌ Sup");
+            sb.AppendLine("├─L: " + IndentHelper(Base.Print(), vSeperator: true));
+            sb.Append("└─R: " + IndentHelper(Sup.Print()));
             return sb.ToString();
         }
     }

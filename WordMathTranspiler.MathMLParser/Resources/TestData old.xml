@@ -24,7 +24,7 @@
   <mml:math xmlns:mml="http://www.w3.org/1998/Math/MathML" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">
     <mml:mi>C</mml:mi>
     <mml:mo>=</mml:mo>
-    <mml:mn>2</mml:mn>
+    <mml:mn>0.33</mml:mn>
     <mml:mo>*</mml:mo>
     <mml:mo>(</mml:mo>
     <mml:mn>7</mml:mn>
@@ -35,37 +35,29 @@
   <mml:math xmlns:mml="http://www.w3.org/1998/Math/MathML" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">
     <mml:mi>D</mml:mi>
     <mml:mo>=</mml:mo>
-    <mml:mn>5</mml:mn>
+    <mml:mn>3</mml:mn>
     <mml:mo>+</mml:mo>
-    <mml:mfrac>
-      <mml:mrow>
-        <mml:mn>1</mml:mn>
-      </mml:mrow>
-      <mml:mrow>
-        <mml:mn>3</mml:mn>
-      </mml:mrow>
-    </mml:mfrac>
+    <mml:mn>2</mml:mn>
+    <mml:mo>*</mml:mo>
+    <mml:mn>7</mml:mn>
   </mml:math>
   <mml:math xmlns:mml="http://www.w3.org/1998/Math/MathML" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">
     <mml:mi>E</mml:mi>
     <mml:mo>=</mml:mo>
-    <mml:mfrac>
-      <mml:mrow>
-        <mml:mn>5</mml:mn>
-        <mml:mo>+</mml:mo>
-        <mml:mn>1</mml:mn>
-      </mml:mrow>
-      <mml:mrow>
-        <mml:mn>3</mml:mn>
-      </mml:mrow>
-    </mml:mfrac>
+    <mml:mo>(</mml:mo>
+    <mml:mn>5</mml:mn>
+    <mml:mo>+</mml:mo>
+    <mml:mn>1</mml:mn>
+    <mml:mo>)</mml:mo>
+    <mml:mo>*</mml:mo>
+    <mml:mn>3</mml:mn>
   </mml:math>
   <mml:math xmlns:mml="http://www.w3.org/1998/Math/MathML" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">
     <mml:mi>F</mml:mi>
     <mml:mo>=</mml:mo>
     <mml:mrow>
       <mml:mrow>
-        <mml:mi mathvariant="normal">sin</mml:mi>
+        <mml:mi mathvariant="normal">cos</mml:mi>
       </mml:mrow>
       <mml:mo>⁡</mml:mo>
       <mml:mrow>
@@ -94,7 +86,7 @@
     </mml:msup>
   </mml:math>
   <mml:math xmlns:mml="http://www.w3.org/1998/Math/MathML" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">
-    <mml:mi>H</mml:mi>
+    <mml:mi>A</mml:mi>
     <mml:mo>=</mml:mo>
     <mml:mrow>
       <mml:mrow>
@@ -127,7 +119,7 @@
       </mml:mrow>
       <mml:mo>⁡</mml:mo>
       <mml:mrow>
-        <mml:mn>90</mml:mn>
+        <mml:mi>a</mml:mi>
       </mml:mrow>
     </mml:mrow>
     <mml:mi> </mml:mi>
@@ -137,7 +129,7 @@
       </mml:mrow>
       <mml:mo>⁡</mml:mo>
       <mml:mrow>
-        <mml:mn>30</mml:mn>
+        <mml:mi>f</mml:mi>
       </mml:mrow>
     </mml:mrow>
   </mml:math>

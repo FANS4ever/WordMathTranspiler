@@ -5,6 +5,17 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
 {
     public class InvocationNode : Node
     {
+        public static List<string> BuiltInFunctions = new List<string>() {
+            "sin", "sec", "sech", // sin(x) | 1 arg
+            "cos", "csc", "csch", // cos(x) | 1 arg
+            "tan", "cot", "coth", // tan(x) | 1 arg
+            "pow" // x^2 | 2 args
+        };
+        public bool IsBuiltinFunction {
+            get {
+                return BuiltInFunctions.Contains(Fn);
+            } 
+        }
         public string Fn { get; set; }
         public List<Node> Args { get; set; }
 
@@ -14,11 +25,6 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
             Args = new List<Node>() { arg };
         }
 
-        /// <summary>
-        /// Function invocation node.
-        /// </summary>
-        /// <param name="fn">function name</param>
-        /// <param name="arg">function arguments</param>
         public InvocationNode(string fn, List<Node> args)
         {
             Fn = fn;
@@ -43,11 +49,11 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
                     var arg = Args[i];
                     if (i == Args.Count - 1)
                     {
-                        sb.Append("└─Arg" + i + ": " + IndentHelper(Args[0].Print(), 8));
+                        sb.Append("└─Arg" + i + ": " + IndentHelper(Args[i].Print(), 8));
                     }
                     else
                     {
-                        sb.Append("├─Arg" + i + ": " + IndentHelper(Args[0].Print(), count: 8, vSeperator: true));
+                        sb.AppendLine("├─Arg" + i + ": " + IndentHelper(Args[i].Print(), count: 8, vSeperator: true));
                     }
                 }
             }

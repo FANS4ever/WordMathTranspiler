@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows.Markup;
 using System.Xml.Linq;
 using WordMathTranspiler.MathMLParser.Nodes;
 using WordMathTranspiler.MathMLParser.Nodes.Data;
@@ -19,7 +20,7 @@ namespace WordMathTranspiler.MathMLParser
             Node parsedTreeRoot = new EmptyNode();
             Node parsedExpression = new EmptyNode();
             Dictionary<string, NumNode.NumType> symbolTable = new Dictionary<string, NumNode.NumType>();
-            for (int i = 0; i < 6; i++)
+            for (int i = 0; i < statements.Count; i++)
             {
                 if (parsedTreeRoot is EmptyNode)
                 {
@@ -44,14 +45,12 @@ namespace WordMathTranspiler.MathMLParser
     
             var subTokens = token.Elements().ToList();
 
-            // Test for left side of assignment
             if (subTokens.Count >= 3 &&
                 subTokens[0].Name.LocalName.Equals("mi") &&
                 !subTokens[0].IsEmpty &&
                 subTokens[1].Name.LocalName.Equals("mo") &&
                 !subTokens[1].IsEmpty && subTokens[1].Value == "=")
             {
-
                 var statement = new AssignNode(
                     variable: new VarNode(subTokens[0].Value),
                     expression: ParseExpression(subTokens.Skip(2).ToList())
@@ -60,13 +59,13 @@ namespace WordMathTranspiler.MathMLParser
                 // Add symbol with type
                 // Create class for symbol table? Will need more information for function declarations
                 symbolTable[subTokens[0].Value] = statement.IsFloatPointOperation() ? NumNode.NumType.Float : NumNode.NumType.Int;
+                statement.Var.Type = symbolTable[subTokens[0].Value];
 
                 return new StatementNode(statement, new EmptyNode());
             }
             else
             {
-                Console.WriteLine("Statement type not implemented yet.");
-                return new EmptyNode();
+                return new StatementNode(ParseExpression(subTokens.ToList()), new EmptyNode());
             }
         }
 
@@ -88,7 +87,6 @@ namespace WordMathTranspiler.MathMLParser
             // Go through all sub tokens
             for (int i = 0; i < tokens.Count; i++)
             {
-                // Current token (Because getting element in list is O(n))
                 var cToken = tokens[i];
                 switch (cToken.Name.LocalName)
                 {
@@ -96,25 +94,30 @@ namespace WordMathTranspiler.MathMLParser
                     case "mrow":
                         stack.Add(ParseMrow(cToken));
                         continue;
-                    // Msup - element power (x^2)
+                    // Msup - element power (x^2) Rewrite
                     case "msup":
-                        stack.Add(ParseMSUP(cToken));
+                        stack.Add(ParseMsup(cToken));
+                        continue;
+                    // MFrac - division element
+                    case "mfrac":
+                        stack.Add(ParseMfrac(cToken));
                         continue;
                     // Mo - assignment operator and binary operators
                     case "mo":
                         if (cToken.Value == "(")
                         {
                             // Opening bracket signifies a new term
-                            stack.Add(ParseTerm(tokens, ref i));
+                            stack.Add(ParseAsTerm(tokens, ref i));
                             continue;
                         } 
                         else if (cToken.Value == ")")
                         {
-                            // Closing bracket cant appear because opening bracket parses term
+                            // Closing bracket cant appear because opening bracket parses both as a term
                             throw new Exception("Unexpected closing bracket!");
                         }
 
-                        //Handle binary operations
+                        // Handle binary operations
+                        // Check if there is a rightside argument
                         if (i + 1 < tokens.Count)
                         {
                             switch (cToken.Value)
@@ -126,13 +129,12 @@ namespace WordMathTranspiler.MathMLParser
                                     stack.Clear(); 
                                     // Parse the next element as a term and continue loop
                                     // Dont use recursion to preserve order of operations
-                                    stack.Add(new BinOpNode(mul, cToken.Value, ParseTerm(tokens.Skip(++i).ToList(), ref i)));
+                                    stack.Add(new BinOpNode(mul, cToken.Value, ParseAsTerm(tokens.Skip(++i).ToList(), ref i)));
                                     continue;
                                 case "+":
                                 case "-":
-                                    // Return because right side argument handles the rest of the elements
-                                    // No need to clear list like in * and / because we return
-                                    // Recursion preserves order of operations
+                                    // Return value because the right side argument handles the rest of the elements
+                                    // Use recursion to preserve order of operations
                                     return new BinOpNode(CreateMultiplicationTree(stack), cToken.Value, ParseExpression(tokens.Skip(i + 1).ToList()));
                                 default:
                                     throw new Exception("Unsupported operation");
@@ -151,20 +153,19 @@ namespace WordMathTranspiler.MathMLParser
                         stack.Add(ParseMN(cToken));
                         continue;
                     default:
-                        throw new NotImplementedException("Unsupported node type " + cToken.Name.LocalName);
+                        throw new NotImplementedException("Unsupported MathML tag " + cToken.Name.LocalName);
                 }
             }
-            // No need to clear list because we return
             return CreateMultiplicationTree(stack);
         }
 
         /// <summary>
-        /// Handles brackets
+        /// Handles brackets. Parses elements inside brackets as a term
         /// </summary>
-        /// <param name="tokens"></param>
-        /// <param name="index"></param>
+        /// <param name="tokens">List of tokens starting with opening bracket</param>
+        /// <param name="offsetIndex">Integer thats going to be offset to the end of the term in the specified tokens list</param>
         /// <returns></returns>
-        private static Node ParseTerm(List<XElement> tokens, ref int index)
+        private static Node ParseAsTerm(List<XElement> tokens, ref int offsetIndex)
         {
             if (tokens.Count == 0)
             {
@@ -182,7 +183,7 @@ namespace WordMathTranspiler.MathMLParser
                 else
                 {
                     // Push index to term end
-                    index += closeIndex;
+                    offsetIndex += closeIndex;
                     // Parse term as expression
                     return ParseExpression(tokens.GetRange(1, closeIndex - 1));
                 }
@@ -193,14 +194,11 @@ namespace WordMathTranspiler.MathMLParser
             }
         }
 
-
         /// <summary>
-        /// Handles mrow elements. Mrow elements contain statements. A math function is also a statement (egzample: Sin(x))
-        /// 
-        /// Add support for multiple parameters?
+        /// Handles mrow elements. Mrow elements contain statements. A math function is also a statement (example: sin(x))
         /// </summary>
-        /// <param name="el"></param>
-        /// <returns></returns>
+        /// <param name="el">Mrow as root element</param>
+        /// <returns>Parsed node tree</returns>
         private static Node ParseMrow(XElement el)
         {
             bool isMathFunction(string val)
@@ -228,10 +226,7 @@ namespace WordMathTranspiler.MathMLParser
                             ParseExpression(children.ElementAt(1))
                         );
                     }
-                    else
-                    {
-                        return ParseExpression(children.ToList());
-                    }
+                    break;
                 default:
                     if (isMathFunction(children.First().Value))
                     {
@@ -240,11 +235,9 @@ namespace WordMathTranspiler.MathMLParser
                             ParseExpression(children.Skip(2).ToList())
                         );
                     }
-                    else
-                    {
-                        return ParseExpression(children.ToList());
-                    }
+                    break;
             }
+            return ParseExpression(children.ToList());
         }
 
         /// <summary>
@@ -252,7 +245,7 @@ namespace WordMathTranspiler.MathMLParser
         /// </summary>
         /// <param name="el"></param>
         /// <returns></returns>
-        private static Node ParseMSUP(XElement el)
+        private static Node ParseMsup(XElement el)
         {
             var supElements = el.Elements();
             int count = supElements.Count();
@@ -260,11 +253,27 @@ namespace WordMathTranspiler.MathMLParser
             {
                 var baseEl = supElements.ElementAt(0);
                 var supEl = supElements.ElementAt(1);
-                return new SupNode(ParseExpression(baseEl), ParseExpression(supEl));
+                return new InvocationNode("pow", new List<Node> { ParseExpression(baseEl), ParseExpression(supEl) });
             }
             else
             {
                 throw new Exception("Sup expected 2 elements but got " + count);
+            }
+        }
+
+        private static Node ParseMfrac(XElement el)
+        {
+            var elements = el.Elements();
+            int count = elements.Count();
+            if (count == 2)
+            {
+                var left = elements.ElementAt(0);
+                var right = elements.ElementAt(1);
+                return new BinOpNode(ParseExpression(left), "/", ParseExpression(right));
+            }
+            else
+            {
+                throw new Exception("Frac expected 2 elements but got " + count);
             }
         }
 

@@ -9,10 +9,18 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WordMathTranspiler.Document
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WordMathTranspiler.MathMLParser", "WordMathTranspiler.MathMLParser\WordMathTranspiler.MathMLParser.csproj", "{445B6E0B-49CD-4400-A61B-21EE466AD966}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WordMathTranspiler.CodeGenerator", "WordMathTranspiler.CodeGenerator\WordMathTranspiler.CodeGenerator.csproj", "{6CF7A8AF-EA59-46F9-AEA3-AF57FA2FE2DC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WordMathTranspiler.CodeGenerator", "WordMathTranspiler.CodeGenerator\WordMathTranspiler.CodeGenerator.csproj", "{6CF7A8AF-EA59-46F9-AEA3-AF57FA2FE2DC}"
 	ProjectSection(ProjectDependencies) = postProject
 		{445B6E0B-49CD-4400-A61B-21EE466AD966} = {445B6E0B-49CD-4400-A61B-21EE466AD966}
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WordMathTranspiler.DocumentParserTests", "WordMathTranspiler.DocumentParserTests\WordMathTranspiler.DocumentParserTests.csproj", "{F3D0E22B-1E12-43B5-8AF5-ABEB5FA4A0F8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WordMathTranspiler.MathMLParserTests", "WordMathTranspiler.MathMLParserTests\WordMathTranspiler.MathMLParserTests.csproj", "{CE99815E-E6F4-4047-9DC9-77B20CE74C09}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WordMathTranspiler.CodeGeneratorTests", "WordMathTranspiler.CodeGeneratorTests\WordMathTranspiler.CodeGeneratorTests.csproj", "{C3B39DFF-AAB5-49AC-9974-D1BD44A5F411}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{9A5D9555-60E9-47CB-8568-87384C3468C8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -36,9 +44,26 @@ Global
 		{6CF7A8AF-EA59-46F9-AEA3-AF57FA2FE2DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6CF7A8AF-EA59-46F9-AEA3-AF57FA2FE2DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6CF7A8AF-EA59-46F9-AEA3-AF57FA2FE2DC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F3D0E22B-1E12-43B5-8AF5-ABEB5FA4A0F8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F3D0E22B-1E12-43B5-8AF5-ABEB5FA4A0F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F3D0E22B-1E12-43B5-8AF5-ABEB5FA4A0F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F3D0E22B-1E12-43B5-8AF5-ABEB5FA4A0F8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CE99815E-E6F4-4047-9DC9-77B20CE74C09}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CE99815E-E6F4-4047-9DC9-77B20CE74C09}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CE99815E-E6F4-4047-9DC9-77B20CE74C09}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CE99815E-E6F4-4047-9DC9-77B20CE74C09}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C3B39DFF-AAB5-49AC-9974-D1BD44A5F411}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C3B39DFF-AAB5-49AC-9974-D1BD44A5F411}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C3B39DFF-AAB5-49AC-9974-D1BD44A5F411}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C3B39DFF-AAB5-49AC-9974-D1BD44A5F411}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{F3D0E22B-1E12-43B5-8AF5-ABEB5FA4A0F8} = {9A5D9555-60E9-47CB-8568-87384C3468C8}
+		{CE99815E-E6F4-4047-9DC9-77B20CE74C09} = {9A5D9555-60E9-47CB-8568-87384C3468C8}
+		{C3B39DFF-AAB5-49AC-9974-D1BD44A5F411} = {9A5D9555-60E9-47CB-8568-87384C3468C8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {0E983EB5-6440-493E-9E21-445C3E8B0062}

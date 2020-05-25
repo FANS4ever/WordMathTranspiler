@@ -12,7 +12,7 @@ using System.Text.Json;
 
 namespace WordMathTranspiler.CodeGenerator
 {
-    class CodeCompiler
+    public class CodeCompiler
     {
         public static void GenerateExecutable(IEnumerable<SyntaxTree> trees)
         {

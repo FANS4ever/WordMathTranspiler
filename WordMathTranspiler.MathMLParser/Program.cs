@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using System;
 using System.IO;
+using WordMathTranspiler.MathMLParser.Nodes;
 
 namespace WordMathTranspiler.MathMLParser
 {
@@ -54,6 +55,7 @@ namespace WordMathTranspiler.MathMLParser
                 if (writeToConsole.Exists() && writeToConsole.Value.Equals("True"))
                 {
                     Console.WriteLine(astRoot.Print());
+                    Console.WriteLine(Node.DOTPrint(astRoot));
                 }
 
 

@@ -9,12 +9,12 @@ using Microsoft.Extensions.Configuration;
 
 namespace WordMathTranspiler.DocumentParser
 {
-    class DocxParser
+    public class DocxParser
     {
         private const string _officeMathTag = "oMath";
         private IConfigurationRoot _config;
-        private string omml2mmlPath;
-        private string rootTagName;
+        public string omml2mmlPath { get; private set; }
+        public string rootTagName { get; private set; }
 
         public DocxParser(string configPath)
         {
@@ -66,6 +66,10 @@ namespace WordMathTranspiler.DocumentParser
         }
         public static void ParseDocumentToFile(string inputFile, string outputFile, string rootNodeName = "data", string omml2mmlLocation = "./XSLT/OMML2MML.XSL")
         {
+            if (!Directory.Exists(Path.GetDirectoryName(outputFile)))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(outputFile));
+            }
             using (StreamWriter outputToFile = new StreamWriter(outputFile))
             {
                 outputToFile.WriteLine(ParseDocument(inputFile, rootNodeName, omml2mmlLocation));

@@ -1,7 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Text;
+using WordMathTranspiler.MathMLParser.Nodes.Data;
+using WordMathTranspiler.MathMLParser.Nodes.Structure;
 
 namespace WordMathTranspiler.MathMLParser.Nodes
 {
@@ -45,5 +44,106 @@ namespace WordMathTranspiler.MathMLParser.Nodes
         }
         public abstract string Print();
         public abstract bool IsFloatPointOperation();
+        public static string PrettyPrint(Node root)
+        {
+            switch (root)
+            {
+                case EmptyNode emptyNode:
+                    return "";
+                case NumNode numNode:
+                    return numNode.Value.ToString();
+                case VarNode varNode:
+                    return varNode.Name.ToString();
+                case AssignNode assignNode:
+                    return PrettyPrint(assignNode.Var) + " = " + PrettyPrint(assignNode.Expr);
+                case InvocationNode invocatioNode:
+                    string iResult = invocatioNode.Fn + "(";
+                    for (int i = 0; i < invocatioNode.Args.Count; i++)
+                    {
+                        var arg = invocatioNode.Args[i];
+                        iResult += PrettyPrint(arg) + (i != invocatioNode.Args.Count - 1 ? ", " : "");
+                    }
+                    return iResult + ")";
+                case BinOpNode operatorNode:
+                    string oResult = "";
+                    if (operatorNode.LeftExpr is NumNode ||
+                        operatorNode.LeftExpr is VarNode ||
+                        operatorNode.LeftExpr is InvocationNode)
+                    {
+                        oResult += PrettyPrint(operatorNode.LeftExpr);
+                    }
+                    else
+                    {
+                        oResult += '(' + PrettyPrint(operatorNode.LeftExpr) + ')';
+                    }
+
+                    oResult += ' ' + operatorNode.Op + ' ';
+
+                    if (operatorNode.RightExpr is NumNode ||
+                        operatorNode.RightExpr is VarNode ||
+                        operatorNode.RightExpr is InvocationNode)
+                    {
+                        oResult += PrettyPrint(operatorNode.RightExpr);
+                    }
+                    else
+                    {
+                        oResult += '(' + PrettyPrint(operatorNode.RightExpr) + ')';
+                    }
+                    return oResult;
+                default:
+                    throw new NotImplementedException("Node type not implemented yet.");
+            }
+        }
+        public static string DOTPrint(Node root)
+        {
+            int idCounter = 0;
+            return String.Format("digraph graphname {0}", "{\n" + DOTHelper(root, ref idCounter).Split('|')[1] + '}');
+        }
+
+        private static string DOTHelper(Node root, ref int id)
+        {
+            switch (root)
+            {
+                case EmptyNode emptyNode:
+                    string emptyId = "E" + (id++);
+                    return emptyId + '|' + emptyId + "[label=\"Empty\"];\n";
+                case NumNode numNode:
+                    string numId = "num" + (id++);
+                    return numId + '|' + numId + string.Format("[label=\"{0}\"];\n", numNode.Value.ToString());
+                case VarNode varNode:
+                    string varId = "var" + (id++);
+                    return varId + '|' + varId + string.Format("[label=\"{0}\"];\n", varNode.Name.ToString());
+                case AssignNode assignNode:
+                    string assignId = "assign" + (id++);
+                    string assignDecl = assignId + "[label=\"=\"];\n";
+                    var varData = DOTHelper(assignNode.Var, ref id).Split('|');
+                    var exprData = DOTHelper(assignNode.Expr, ref id).Split('|');
+                    return assignId + '|' + assignDecl + varData[1] + exprData[1] + assignId + " -> " + varData[0] + ";\n" + assignId + " -> " + exprData[0] + ";\n";
+                case InvocationNode invocatioNode:
+                    string invocId = "invoc" + (id++);
+                    string invocDecl = invocId + string.Format("[label=\"{0}\"]", invocatioNode.Fn);
+                    string result = invocDecl;
+                    for (int i = 0; i < invocatioNode.Args.Count; i++)
+                    {
+                        var argData = DOTHelper(invocatioNode.Args[i], ref id).Split('|');
+                        result += argData[1] + invocId + " -> " + argData[0] + ";\n";
+                    }
+                    return invocId + '|' + result;
+                case BinOpNode operatorNode:
+                    string opId = "op" + (id++);
+                    string opDecl = opId + string.Format("[label=\"{0}\"];\n", operatorNode.Op);
+                    var leftData = DOTHelper(operatorNode.LeftExpr, ref id).Split('|');
+                    var rightData = DOTHelper(operatorNode.RightExpr, ref id).Split('|');
+                    return opId + '|' + opDecl + leftData[1] + rightData[1] + opId + " -> " + leftData[0] + ";\n" + opId+ " -> " + rightData[0] + ";\n";
+                case StatementNode statementNode:
+                    string statId = "stat" + (id++);
+                    string statDecl = statId + "[label=\"Statement\"];\n";
+                    var bodyData = DOTHelper(statementNode.Body, ref id).Split('|');
+                    var nextData = DOTHelper(statementNode.Next, ref id).Split('|');
+                    return statId + '|' + statDecl + bodyData[1] + nextData[1] + statId + " -> " + bodyData[0] + ";\n" + statId + " -> " + nextData[0] + ";\n";
+                default:
+                    throw new NotImplementedException("Node type not implemented yet. Type: " + root);
+            }
+        }
     }
 }

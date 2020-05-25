@@ -57,17 +57,17 @@ namespace WordMathTranspiler.MathMLParser
                 subTokens[1].Name.LocalName.Equals("mo") &&
                 !subTokens[1].IsEmpty && subTokens[1].Value == "=")
             {
-                var statement = new AssignNode(
-                    variable: new VarNode(subTokens[0].Value),
+                var assignNode = new AssignNode(
+                    variable: ParseMIVar(subTokens[0]) as VarNode,
                     expression: ParseExpression(subTokens.Skip(2).ToList())
                 );
 
                 // Add symbol with type
                 // Create class for symbol table? Will need more information for function declarations
-                symbolTable[subTokens[0].Value] = statement.IsFloatPointOperation() ? NumNode.NumType.Float : NumNode.NumType.Int;
-                statement.Var.Type = symbolTable[subTokens[0].Value];
+                symbolTable[subTokens[0].Value] = assignNode.IsFloatPointOperation() ? NumNode.NumType.Float : NumNode.NumType.Int;
+                assignNode.Var.Type = symbolTable[subTokens[0].Value];
 
-                return new StatementNode(statement, new EmptyNode());
+                return new StatementNode(assignNode, new EmptyNode());
             }
             else
             {
@@ -130,18 +130,21 @@ namespace WordMathTranspiler.MathMLParser
                             {
                                 case "*":
                                 case "/":
-                                    var mul = CreateMultiplicationTree(stack);
-                                    // Clear list because we parsed it to one node
-                                    stack.Clear(); 
-                                    // Parse the next element as a term and continue loop
-                                    // Dont use recursion to preserve order of operations
-                                    stack.Add(new BinOpNode(mul, cToken.Value, ParseAsTerm(tokens.Skip(++i).ToList(), ref i)));
-                                    continue;
                                 case "+":
                                 case "-":
-                                    // Return value because the right side argument handles the rest of the elements
-                                    // Use recursion to preserve order of operations
-                                    return new BinOpNode(CreateMultiplicationTree(stack), cToken.Value, ParseExpression(tokens.Skip(i + 1).ToList()));
+                                    var mul = CreateMultiplicationTree(stack);
+                                    if (mul is EmptyNode)
+                                    {
+                                        throw new Exception("Missing right side argument for operator " + cToken.Value);
+                                    }
+                                    else
+                                    {
+                                        // Clear list because we parsed it to one node
+                                        stack.Clear();
+                                        // Parse the next element as a term and continue loop
+                                        stack.Add(new BinOpNode(mul, cToken.Value, ParseAsTerm(tokens.Skip(++i).ToList(), ref i)));
+                                        continue;
+                                    }
                                 default:
                                     throw new Exception("Unsupported operation");
                             }
@@ -151,6 +154,8 @@ namespace WordMathTranspiler.MathMLParser
                             throw new Exception("Unexpected end of input");
                         }
                     // Mi - identifier element (function name or variable name)
+                    // Mtext - mutlicharacter identifier
+                    case "mtext":
                     case "mi":
                         stack.Add(ParseMIVar(cToken));
                         continue;
@@ -178,8 +183,7 @@ namespace WordMathTranspiler.MathMLParser
                 return new EmptyNode();
             }
 
-            var cToken = tokens[0];
-            if (cToken.Value == "(") // Handle brackets
+            if (tokens[0].Value == "(") // Handle brackets
             {
                 var closeIndex = tokens.FindIndex((x) => x.Name.LocalName == "mo" && x.Value == ")");
                 if (closeIndex == -1)
@@ -198,6 +202,39 @@ namespace WordMathTranspiler.MathMLParser
             {
                 return ParseExpression(tokens[0]);
             }
+        }
+
+
+        /// <summary>
+        /// THIS FUNCTION IS A PROTOTYPE
+        /// </summary>
+        /// <param name="tokens"></param>
+        /// <param name="offsetIndex"></param>
+        /// <returns></returns>
+        private static Node CreateTermTree(List<XElement> tokens, ref int offsetIndex)
+        {
+            if (tokens.Count == 0)
+            {
+                return new EmptyNode();
+            }
+
+            var root = ParseAsTerm(tokens, ref offsetIndex);
+            for (int i = 1; i < tokens.Count; i++)
+            {
+                if (tokens[i].Value == "+" || tokens[i].Value == "-")
+                {
+                    return root;
+                }
+                else
+                {
+                    var oldOffsetIndex = offsetIndex;
+                    offsetIndex = offsetIndex + i;
+                    root = new BinOpNode(root, tokens[i].Value, CreateTermTree(tokens.Skip(i + 1).ToList(), ref offsetIndex));
+                    i = i + (offsetIndex - oldOffsetIndex);
+                    offsetIndex++;
+                }
+            }
+            return root;
         }
 
         /// <summary>

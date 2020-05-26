@@ -2,7 +2,7 @@
 
 namespace WordMathTranspiler.MathMLParser.Nodes.Data
 {
-    public class VarNode : Node
+    public class IdentifierNode : Node
     {
         public NumType Type { get; set; }
         public string Name { get; set; }
@@ -11,7 +11,7 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Data
         /// Variable name node.
         /// </summary>
         /// <param name="name">Name of the variable</param>
-        public VarNode(string name)
+        public IdentifierNode(string name)
         {
             Name = name;
         }
@@ -28,7 +28,7 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Data
 
         public override bool Equals(object obj)
         {
-            VarNode item = obj as VarNode;
+            IdentifierNode item = obj as IdentifierNode;
 
             if (item == null)
             {

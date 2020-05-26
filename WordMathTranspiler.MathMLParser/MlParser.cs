@@ -12,7 +12,7 @@ namespace WordMathTranspiler.MathMLParser
     {
         public static Exception Error(string message, IXmlLineInfo lineInfo)
         {
-            return new Exception("[MlParser]" + message + (lineInfo.HasLineInfo() ? " Line:" + lineInfo.LineNumber : ""));
+            return new Exception("[MlParser] - " + message + (lineInfo.HasLineInfo() ? " Line:" + lineInfo.LineNumber : ""));
         }
 
         #region Tag handlers
@@ -27,11 +27,25 @@ namespace WordMathTranspiler.MathMLParser
             {
                 var value = lex.Node.Value;
                 lex.Eat("mi");
-                return new VarNode(value);
+                return new IdentifierNode(value);
             }
             else
             {
-                throw Error("[Error] - Possible error in syntax. Found empty identifier tag (<mi>) in XML.", lex.GetLineInfo());
+                throw Error("Possible error in syntax. Found empty identifier tag (<mi>) in XML.", lex.GetLineInfo());
+            }
+        }
+
+        private static Node HandleMtext(MlLexer lex)
+        {
+            if (!string.IsNullOrWhiteSpace(lex.Node.Value))
+            {
+                var value = lex.Node.Value;
+                lex.Eat("mtext");
+                return new IdentifierNode(value);
+            }
+            else
+            {
+                throw Error("Possible error in syntax. Found empty identifier tag (<mtext>) in XML.", lex.GetLineInfo());
             }
         }
 
@@ -58,12 +72,12 @@ namespace WordMathTranspiler.MathMLParser
                 }
                 else
                 {
-                    throw Error("[Error] - Failed to parse number tag (<mn>).", lex.GetLineInfo());
+                    throw Error("Failed to parse number tag (<mn>).", lex.GetLineInfo());
                 }
             }
             else
             {
-                throw Error("[Error] - Possible error in syntax. Found empty number tag (<mn>) in XML.", lex.GetLineInfo());
+                throw Error("Possible error in syntax. Found empty number tag (<mn>) in XML.", lex.GetLineInfo());
             }
         }
 
@@ -71,6 +85,13 @@ namespace WordMathTranspiler.MathMLParser
         {
             var deepLex = lex.GetDeepLexer();
             lex.Eat("mrow");
+            return Expr(deepLex);
+        }
+
+        private static Node HandleMfenced(MlLexer lex)
+        {
+            var deepLex = lex.GetDeepLexer();
+            lex.Eat("mfenced");
             return Expr(deepLex);
         }
 
@@ -126,37 +147,40 @@ namespace WordMathTranspiler.MathMLParser
         /// <returns></returns>
         private static Node Factor(MlLexer lex)
         {
-            Node node = new EmptyNode();
             switch (lex.Node.Name)
             {
                 case "mn":
-                    node = HandleMn(lex);
-                    return node;
+                    return HandleMn(lex);
                 case "mtext":
+                    return HandleMtext(lex);
                 case "mi":
-                    node = HandleMi(lex);
-                    return node;
+                    return HandleMi(lex);
+                case "mfenced":
+                    return HandleMfenced(lex);
                 case "mrow":
-                    node = HandleMrow(lex);
-                    return node;
+                    return HandleMrow(lex);
                 case "mo":
-                    if (lex.Node.Value == "(")
+                    switch (lex.Node.Value)
                     {
-                        lex.Eat("mo");
-                        node = Expr(lex);
-                        lex.Eat("mo"); // Try eating ')'. Test if its a closing bracket?
-                        return node;
+                        case "-":
+                        case "+":
+                            lex.Eat("mo");
+                            return new UnaryOpNode(lex.Node.Value, Factor(lex));
+                        case "(":
+                            lex.Eat("mo");
+                            Node node = Expr(lex);
+                            lex.Eat("mo"); // Try eating ')'. Test if its a closing bracket?
+                            return node;
+                        default:
+                            throw Error($"Can't factor operator {lex.Node.Value}.", lex.GetLineInfo());
                     }
-                    Console.WriteLine("[Warning] Factor function got <mo> element thats not a bracket.");
-                    break;
                 case "mfrac":
-                    node = HandleMfrac(lex);
-                    return node;
+                    return HandleMfrac(lex);
                 case "msup":
-                    node = HandleMsup(lex);
-                    return node;
+                    return HandleMsup(lex);
+                default:
+                    throw Error($"Unsupported tag {lex.Node.Name}", lex.GetLineInfo());
             }
-            return node;
         }
         /// <summary>
         /// term : factor ((MUL | DIV) factor)*
@@ -180,18 +204,18 @@ namespace WordMathTranspiler.MathMLParser
                         case "/":
                             node = new BinOpNode(node, value, Factor(lex));
                             continue;
-                        case "\u2061":
-                            VarNode fn = node as VarNode;
+                        case "\u2061": // FUNCTION APPLICATION operator in unicode
+                            IdentifierNode fn = node as IdentifierNode;
                             if (fn == null)
                             {
-                                throw new Exception("Error - Values can only be assigned to a variable node");
+                                throw Error("Values can only be assigned to a variable node.", lex.GetLineInfo());
                             }
                             node = new InvocationNode(fn.Name, Factor(lex));
                             continue;
                     }
                 }
-
-                node = new BinOpNode(node, "*", Factor(lex)); //If no operator assume multiplication
+                //If not an operator assume multiplication
+                node = new BinOpNode(node, "*", Factor(lex)); 
             }
 
             return node;
@@ -214,44 +238,123 @@ namespace WordMathTranspiler.MathMLParser
 
             return node;
         }
-        private static Node Assignment(MlLexer lex)
+        private static List<Node> ParameterList(MlLexer lex)
+        {
+            MlLexer UnnestParameterList(MlLexer lex)
+            {
+                switch (lex.Node.Name)
+                {
+                    case "mfenced":
+                        MlLexer mfLex = lex.GetDeepLexer();
+                        lex.Eat("mfenced");
+                        return UnnestParameterList(mfLex);
+                    case "mrow":
+                        MlLexer mrLex = lex.GetDeepLexer();
+                        lex.Eat("mrow");
+                        return UnnestParameterList(mrLex);
+                    default:
+                        return lex;
+                }
+            }
+
+            Node CreateParameterNode(MlLexer lex)
+            {
+                switch (lex.Node.Name)
+                {
+                    case "mtext":
+                        return HandleMtext(lex);
+                    case "mi":
+                        return HandleMi(lex);
+                    default:
+                        throw Error($"Tag {lex.Node.Name} can't be parsed as a parameter.", lex.GetLineInfo());
+                }
+            }
+
+            MlLexer paramLex = UnnestParameterList(lex);
+            Node node = CreateParameterNode(paramLex);
+            List<Node> nodeList = new List<Node>() { node };
+            while (!paramLex.IsFinished && paramLex.Node.Name == "mo" && paramLex.Node.Value == ",")
+            {
+                paramLex.Eat("mo");
+                node = CreateParameterNode(paramLex);
+                nodeList.Add(node);
+            }
+
+            return nodeList;
+        }
+        private static Node FunctionDeclaration(MlLexer lex)
+        {
+            MlLexer mrowLex = lex.GetDeepLexer();
+            lex.Eat("mrow");
+            IdentifierNode funcNameNode = Factor(mrowLex) as IdentifierNode;
+            mrowLex.Eat("mo"); // \u2061 FUNCTION APPLICATION operator in unicode
+            List<Node> parameters = ParameterList(mrowLex);
+            lex.Eat("mo"); // Eat '='
+            return new FuncDeclNode(funcNameNode.Name, parameters, Expr(lex));
+        }
+        private static Node VariableDeclaration(MlLexer lex)
         {
             Node left = HandleMi(lex);
-            //string op = lex.Current.Value; //Add test to see if theres an assignment operator?
             lex.Eat("mo"); // Eat '='
             Node expr = Expr(lex);
-            return new AssignNode((VarNode)left, expr);
+            return new AssignNode((IdentifierNode)left, expr);
         }
-        private static Node StatementList(MlLexer lex)
+        private static Node Declarations(MlLexer lex)
+        {
+            switch (lex.Node.Name)
+            {
+                case "mi":
+                    return VariableDeclaration(lex);
+                case "mrow":
+                    return FunctionDeclaration(lex);
+                default:
+                    throw Error($"Can't assign to tag <{lex.Node.Name}>", lex.GetLineInfo());
+            }
+        }
+        private static Node StatementList(MlLexer lex, bool ignoreBrokenStatements = false)
         {
             Node root = new EmptyNode();
             Node prevNode = new EmptyNode();
             while (!lex.IsFinished && lex.Node.Name == "math")
             {
-                MlLexer statementLex = lex.GetDeepLexer();
-                lex.Eat("math");
-                Node current = new EmptyNode();
-                var laNode = statementLex.LookAhead();
-                if (laNode != null &&
-                    laNode.Name == "mo" &&
-                    laNode.Value == "=")
+                try
                 {
-                    current = new StatementNode(Assignment(statementLex), new EmptyNode());
-                }
-                else
-                {
-                    current = new StatementNode(Expr(statementLex), new EmptyNode());
-                }
+                    MlLexer statementLex = lex.GetDeepLexer();
+                    lex.Eat("math");
+                    Node current = new EmptyNode();
+                    var laNode = statementLex.Peek();
+                    if (laNode != null &&
+                        laNode.Name == "mo" &&
+                        laNode.Value == "=")
+                    {
+                        current = new StatementNode(Declarations(statementLex), new EmptyNode());
+                    }
+                    else
+                    {
+                        current = new StatementNode(Expr(statementLex), new EmptyNode());
+                    }
 
-                root = root is EmptyNode ? current : root;
-                if (prevNode is EmptyNode)
-                {
-                    prevNode = current;
+                    root = root is EmptyNode ? current : root;
+                    if (prevNode is EmptyNode)
+                    {
+                        prevNode = current;
+                    }
+                    else
+                    {
+                        ((StatementNode)prevNode).Next = current;
+                        prevNode = current;
+                    }
                 }
-                else
+                catch (Exception e)
                 {
-                    ((StatementNode)prevNode).Next = current;
-                    prevNode = current;
+                    if (ignoreBrokenStatements)
+                    {
+                        Console.WriteLine("[SKIPSTATEMENT][ERROR] {0}", e.Message);
+                    }
+                    else
+                    {
+                        throw e;
+                    }
                 }
             }
 

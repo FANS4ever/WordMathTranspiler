@@ -83,7 +83,7 @@ namespace WordMathTranspiler.CodeGenerator
                     throw new Exception("Unexpected empty node inside statement");
                 case NumNode numNode:
                     return generator.LiteralExpression(numNode.Value);
-                case VarNode varNode:
+                case IdentifierNode varNode:
                     switch (varNode.Name)
                     {
                         case "π": // 3.14...
@@ -169,7 +169,7 @@ namespace WordMathTranspiler.CodeGenerator
                     return "";
                 case NumNode numNode:
                     return numNode.Value.ToString();
-                case VarNode varNode:
+                case IdentifierNode varNode:
                     return varNode.Name.ToString();
                 case AssignNode assignNode:
                     return RecursivePrettyPrint(assignNode.Var) + " = " + RecursivePrettyPrint(assignNode.Expr);
@@ -184,7 +184,7 @@ namespace WordMathTranspiler.CodeGenerator
                 case BinOpNode operatorNode:
                     string oResult = "";
                     if (operatorNode.LeftExpr is NumNode || 
-                        operatorNode.LeftExpr is VarNode || 
+                        operatorNode.LeftExpr is IdentifierNode || 
                         operatorNode.LeftExpr is InvocationNode)
                     {
                         oResult += RecursivePrettyPrint(operatorNode.LeftExpr);
@@ -197,7 +197,7 @@ namespace WordMathTranspiler.CodeGenerator
                     oResult += ' ' + operatorNode.Op + ' ';
 
                     if (operatorNode.RightExpr is NumNode || 
-                        operatorNode.RightExpr is VarNode ||
+                        operatorNode.RightExpr is IdentifierNode ||
                         operatorNode.RightExpr is InvocationNode)
                     {
                         oResult += RecursivePrettyPrint(operatorNode.RightExpr);

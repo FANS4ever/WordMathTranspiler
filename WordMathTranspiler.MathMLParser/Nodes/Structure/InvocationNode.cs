@@ -46,14 +46,13 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
             {
                 for (int i = 0; i < Args.Count; i++)
                 {
-                    var arg = Args[i];
                     if (i == Args.Count - 1)
                     {
-                        sb.Append("└─Arg" + i + ": " + IndentHelper(Args[i].Print(), 8));
+                        sb.Append("└─Arg" + i + ": " + IndentHelper(Args[i].Print(), 7 + i.ToString().Length));
                     }
                     else
                     {
-                        sb.AppendLine("├─Arg" + i + ": " + IndentHelper(Args[i].Print(), count: 8, vSeperator: true));
+                        sb.AppendLine("├─Arg" + i + ": " + IndentHelper(Args[i].Print(), count: 7 + i.ToString().Length, drawSeperator: true));
                     }
                 }
             }

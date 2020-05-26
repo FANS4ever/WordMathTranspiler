@@ -48,7 +48,7 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("┌ Statement type:" + Type.ToString() + " isFloat: " + IsFloatPointOperation());
-            sb.AppendLine("├─L: " + IndentHelper(Body.Print(), vSeperator: true));
+            sb.AppendLine("├─L: " + IndentHelper(Body.Print(), drawSeperator: true));
             sb.Append("└─R: " + IndentHelper(Next.Print()));
             return sb.ToString();
         }

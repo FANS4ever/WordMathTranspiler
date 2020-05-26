@@ -8,9 +8,9 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
     /// </summary>
     public class AssignNode : Node
     {
-        public VarNode Var { get; set; }
+        public IdentifierNode Var { get; set; }
         public Node Expr { get; set; }
-        public AssignNode(VarNode variable, Node expression) {
+        public AssignNode(IdentifierNode variable, Node expression) {
             Var = variable;
             Expr = expression;
         }
@@ -24,7 +24,7 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("┌ =");
-            sb.AppendLine("├─L: " + IndentHelper(Var.Print(), vSeperator: true));
+            sb.AppendLine("├─L: " + IndentHelper(Var.Print(), drawSeperator: true));
             sb.Append("└─R: " + IndentHelper(Expr.Print()));
             return sb.ToString();
         }

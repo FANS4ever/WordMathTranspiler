@@ -12,6 +12,8 @@ namespace WordMathTranspiler.MathMLParser.Nodes
     {
         // Abstract methods to implement
         public abstract string Print();
+
+        // Maybe move to semantic analyzer?
         public abstract bool IsFloatPointOperation();
        
         //  Printing methods
@@ -23,7 +25,7 @@ namespace WordMathTranspiler.MathMLParser.Nodes
                     return "";
                 case NumNode numNode:
                     return numNode.Value.ToString();
-                case VarNode varNode:
+                case IdentifierNode varNode:
                     return varNode.Name.ToString();
                 case AssignNode assignNode:
                     return TextPrint(assignNode.Var) + " = " + TextPrint(assignNode.Expr);
@@ -38,7 +40,7 @@ namespace WordMathTranspiler.MathMLParser.Nodes
                 case BinOpNode operatorNode:
                     string oResult = "";
                     if (operatorNode.LeftExpr is NumNode ||
-                        operatorNode.LeftExpr is VarNode ||
+                        operatorNode.LeftExpr is IdentifierNode ||
                         operatorNode.LeftExpr is InvocationNode)
                     {
                         oResult += TextPrint(operatorNode.LeftExpr);
@@ -51,7 +53,7 @@ namespace WordMathTranspiler.MathMLParser.Nodes
                     oResult += ' ' + operatorNode.Op + ' ';
 
                     if (operatorNode.RightExpr is NumNode ||
-                        operatorNode.RightExpr is VarNode ||
+                        operatorNode.RightExpr is IdentifierNode ||
                         operatorNode.RightExpr is InvocationNode)
                     {
                         oResult += TextPrint(operatorNode.RightExpr);
@@ -70,9 +72,9 @@ namespace WordMathTranspiler.MathMLParser.Nodes
         /// </summary>
         /// <param name="src">Input string</param>
         /// <param name="count">Indentation level (spaces). Default: 5</param>
-        /// <param name="vSeperator">Should the method use the '│' vertical seperator. Default: false</param>
+        /// <param name="drawSeperator">Should the method draw the '│' vertical seperator. Default: false</param>
         /// <returns></returns>
-        protected static string IndentHelper(string src, int count = 5, bool vSeperator = false)
+        protected static string IndentHelper(string src, int count = 5, bool drawSeperator = false)
         {
             string[] split = src.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
 
@@ -82,7 +84,7 @@ namespace WordMathTranspiler.MathMLParser.Nodes
                 for (int i = 1; i < split.Length; i++)
                 {
                     string item = split[i];
-                    if (vSeperator)
+                    if (drawSeperator)
                     {
                         result += Environment.NewLine + '│' + new string(' ', count - 1) + item;
                     }
@@ -105,6 +107,8 @@ namespace WordMathTranspiler.MathMLParser.Nodes
         }
         private static string DOTHelper(Node root, ref int id)
         {
+            // REWRITE WITH STRING INTERPOLIATION
+
             switch (root)
             {
                 case EmptyNode emptyNode:
@@ -113,9 +117,9 @@ namespace WordMathTranspiler.MathMLParser.Nodes
                 case NumNode numNode:
                     string numId = "num" + (id++);
                     return numId + '|' + numId + string.Format("[label=\"{0}\"];\n", numNode.Value.ToString());
-                case VarNode varNode:
-                    string varId = "var" + (id++);
-                    return varId + '|' + varId + string.Format("[label=\"{0}\"];\n", varNode.Name.ToString());
+                case IdentifierNode identNode:
+                    string identId = "identifier" + (id++);
+                    return identId + '|' + identId + string.Format("[label=\"{0}\"];\n", identNode.Name.ToString());
                 case AssignNode assignNode:
                     string assignId = "assign" + (id++);
                     string assignDecl = assignId + "[label=\"=\"];\n";
@@ -124,28 +128,44 @@ namespace WordMathTranspiler.MathMLParser.Nodes
                     return assignId + '|' + assignDecl + varData[1] + exprData[1] + assignId + " -> " + varData[0] + ";\n" + assignId + " -> " + exprData[0] + ";\n";
                 case InvocationNode invocatioNode:
                     string invocId = "invoc" + (id++);
-                    string invocDecl = invocId + string.Format("[label=\"{0}\"]", invocatioNode.Fn);
-                    string result = invocDecl;
+                    string invocDecl = invocId + string.Format("[label=\"{0}\"]\n", invocatioNode.Fn);
+                    string invocResult = invocDecl;
                     for (int i = 0; i < invocatioNode.Args.Count; i++)
                     {
                         var argData = DOTHelper(invocatioNode.Args[i], ref id).Split('|');
-                        result += argData[1] + invocId + " -> " + argData[0] + ";\n";
+                        invocResult += argData[1] + invocId + " -> " + argData[0] + ";\n";
                     }
-                    return invocId + '|' + result;
+                    return invocId + '|' + invocResult;
                 case BinOpNode operatorNode:
                     string opId = "op" + (id++);
                     string opDecl = opId + string.Format("[label=\"{0}\"];\n", operatorNode.Op);
                     var leftData = DOTHelper(operatorNode.LeftExpr, ref id).Split('|');
                     var rightData = DOTHelper(operatorNode.RightExpr, ref id).Split('|');
                     return opId + '|' + opDecl + leftData[1] + rightData[1] + opId + " -> " + leftData[0] + ";\n" + opId+ " -> " + rightData[0] + ";\n";
+                case UnaryOpNode unOpNode:
+                    string unOpId = "unOp" + (id++);
+                    string unOpDecl = unOpId + string.Format("[label=\"{0}\"];\n", $"Unary:{unOpNode.Op}");
+                    var unOpExprData = DOTHelper(unOpNode.Expr, ref id).Split('|');
+                    return unOpId + '|' + unOpDecl + unOpExprData[1] + unOpId + " -> " + unOpExprData[0] + ";\n";
                 case StatementNode statementNode:
                     string statId = "stat" + (id++);
                     string statDecl = statId + "[label=\"Statement\"];\n";
                     var bodyData = DOTHelper(statementNode.Body, ref id).Split('|');
                     var nextData = DOTHelper(statementNode.Next, ref id).Split('|');
                     return statId + '|' + statDecl + bodyData[1] + nextData[1] + statId + " -> " + bodyData[0] + ";\n" + statId + " -> " + nextData[0] + ";\n";
+                case FuncDeclNode funcDeclNode:
+                    string fdeclId = "funcDecl" + (id++);
+                    string fdeclDecl = fdeclId + string.Format("[label=\"{0}\"]\n", $"FuncDecl:{funcDeclNode.Name}");
+                    string fdeclResult = fdeclDecl;
+                    for (int i = 0; i < funcDeclNode.Params.Count; i++)
+                    {
+                        var paramData = DOTHelper(funcDeclNode.Params[i], ref id).Split('|');
+                        fdeclResult += paramData[1] + fdeclId + " -> " + paramData[0] + $"[label=\"Param{i}\"];\n";
+                    }
+                    var fdeclBody = DOTHelper(funcDeclNode.Body, ref id).Split('|');
+                    return fdeclId + '|' + fdeclResult + fdeclBody[1] + fdeclId + " -> " + fdeclBody[0] + "[label=\"Body\"];\n";
                 default:
-                    throw new NotImplementedException("Node type not implemented yet. Type: " + root);
+                    throw new NotImplementedException("[DOT HELPER] - Node type not implemented yet. Type: " + root);
             }
         }
 

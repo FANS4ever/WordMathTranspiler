@@ -40,7 +40,7 @@ namespace WordMathTranspiler.MathMLParser
             else
             {
                 IXmlLineInfo lineInfo = GetLineInfo();
-                throw new Exception("[MlLexer][Error] - Error in syntax." + (lineInfo.HasLineInfo() ? " Line:" + lineInfo.LineNumber : ""));
+                throw new Exception("[MlLexer] - Error in syntax." + (lineInfo.HasLineInfo() ? " Line:" + lineInfo.LineNumber : ""));
             }
         }
 
@@ -48,7 +48,7 @@ namespace WordMathTranspiler.MathMLParser
         /// Check the next node.
         /// </summary>
         /// <returns>Next node info or null if no more elements</returns>
-        public MlLexerNodeInfo LookAhead()
+        public MlLexerNodeInfo Peek()
         {
             XElement nextNode = index + 1 >= elementList.Count ? null : elementList[index + 1];
             return MlLexerNodeInfo.MakeNode(nextNode);
@@ -69,6 +69,10 @@ namespace WordMathTranspiler.MathMLParser
         /// <returns>MlLexer object</returns>
         public MlLexer GetDeepLexer()
         {
+            if (IsFinished)
+            {
+                throw new Exception("[MlLexer] - Can't create deeper lexer. Lexer has finished working.");
+            }
             return new MlLexer(RawNode);
         }
     }

@@ -28,7 +28,7 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("┌ " + Op);
-            sb.AppendLine("├─L: " + IndentHelper(LeftExpr.Print(), vSeperator: true));
+            sb.AppendLine("├─L: " + IndentHelper(LeftExpr.Print(), drawSeperator: true));
             sb.Append("└─R: " + IndentHelper(RightExpr.Print()));
             return sb.ToString();
         }

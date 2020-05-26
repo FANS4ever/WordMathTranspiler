@@ -35,10 +35,8 @@ namespace WordMathTranspiler.MathMLParser
                 .AddJsonFile("appsettings.json");
                 var config = builder.Build();
 
-                MlParser parser = new MlParser();
                 Console.WriteLine("Generating AST...");
-                var astRoot = parser.Parse(args[0]);
-
+                var astRoot = MlParser.Parse(args[0]);
 
                 // Move to a settings method
                 var writeToFile = config.GetSection("writeResultToFile");

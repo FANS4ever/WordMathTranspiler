@@ -1,5 +1,7 @@
-﻿using System.Data;
+﻿using System.Collections.Generic;
+using System.Data;
 using System.Text;
+using WordMathTranspiler.MathMLParser.Nodes.Data;
 
 namespace WordMathTranspiler.MathMLParser.Nodes.Structure
 {
@@ -49,6 +51,23 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
             sb.AppendLine("├─L: " + IndentHelper(Body.Print(), vSeperator: true));
             sb.Append("└─R: " + IndentHelper(Next.Print()));
             return sb.ToString();
+        }
+
+        public override bool Equals(object obj)
+        {
+            StatementNode item = obj as StatementNode;
+
+            if (item == null)
+            {
+                return false;
+            }
+
+            return Body.Equals(item.Body) && Next.Equals(item.Next);
+        }
+
+        public override int GetHashCode()
+        {
+            return Body.GetHashCode() ^ Next.GetHashCode();
         }
     }
 }

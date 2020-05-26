@@ -63,5 +63,33 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
             }
             return sb.ToString();
         }
+
+        public override bool Equals(object obj)
+        {
+            InvocationNode item = obj as InvocationNode;
+
+            if (item == null)
+            {
+                return false;
+            }
+
+            if (Args.Count == item.Args.Count)
+            {
+                for (int i = 0; i < Args.Count; i++)
+                {
+                    if (!Args[i].Equals(item.Args[i]))
+                    {
+                        return false;
+                    }
+                }
+                return Fn.Equals(item.Fn);
+            }
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return Fn.GetHashCode() ^ Args.GetHashCode();
+        }
     }
 }

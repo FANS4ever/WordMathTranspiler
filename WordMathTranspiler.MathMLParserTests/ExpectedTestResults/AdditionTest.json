@@ -1,0 +1,49 @@
+{
+  "Type": 1,
+  "Body": {
+    "$type": "WordMathTranspiler.MathMLParser.Nodes.Structure.AssignNode, WordMathTranspiler.MathMLParser",
+    "Var": {
+      "Type": 0,
+      "Name": "A"
+    },
+    "Expr": {
+      "$type": "WordMathTranspiler.MathMLParser.Nodes.Structure.BinOpNode, WordMathTranspiler.MathMLParser",
+      "LeftExpr": {
+        "$type": "WordMathTranspiler.MathMLParser.Nodes.Structure.BinOpNode, WordMathTranspiler.MathMLParser",
+        "LeftExpr": {
+          "$type": "WordMathTranspiler.MathMLParser.Nodes.Structure.BinOpNode, WordMathTranspiler.MathMLParser",
+          "LeftExpr": {
+            "$type": "WordMathTranspiler.MathMLParser.Nodes.Structure.BinOpNode, WordMathTranspiler.MathMLParser",
+            "LeftExpr": {
+              "$type": "WordMathTranspiler.MathMLParser.Nodes.Data.NumNode, WordMathTranspiler.MathMLParser",
+              "Value": 1
+            },
+            "Op": "+",
+            "RightExpr": {
+              "$type": "WordMathTranspiler.MathMLParser.Nodes.Data.NumNode, WordMathTranspiler.MathMLParser",
+              "Value": 2
+            }
+          },
+          "Op": "+",
+          "RightExpr": {
+            "$type": "WordMathTranspiler.MathMLParser.Nodes.Data.NumNode, WordMathTranspiler.MathMLParser",
+            "Value": 3
+          }
+        },
+        "Op": "+",
+        "RightExpr": {
+          "$type": "WordMathTranspiler.MathMLParser.Nodes.Data.NumNode, WordMathTranspiler.MathMLParser",
+          "Value": 4
+        }
+      },
+      "Op": "+",
+      "RightExpr": {
+        "$type": "WordMathTranspiler.MathMLParser.Nodes.Data.NumNode, WordMathTranspiler.MathMLParser",
+        "Value": 5
+      }
+    }
+  },
+  "Next": {
+    "$type": "WordMathTranspiler.MathMLParser.Nodes.Data.EmptyNode, WordMathTranspiler.MathMLParser"
+  }
+}

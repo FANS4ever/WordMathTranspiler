@@ -16,5 +16,15 @@
         {
             return "EmptyNode";
         }
+
+        public override bool Equals(object obj)
+        {
+            EmptyNode item = obj as EmptyNode;
+            return item != null;
+        }
+        public override int GetHashCode()
+        {
+            return GetType().GetHashCode();
+        }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using WordMathTranspiler.MathMLParser.Nodes.Data;
 using WordMathTranspiler.MathMLParser.Nodes.Structure;
+using Newtonsoft.Json;
 
 namespace WordMathTranspiler.MathMLParser.Nodes
 {
@@ -9,6 +10,61 @@ namespace WordMathTranspiler.MathMLParser.Nodes
     /// </summary>
     public abstract class Node
     {
+        // Abstract methods to implement
+        public abstract string Print();
+        public abstract bool IsFloatPointOperation();
+       
+        //  Printing methods
+        public static string TextPrint(Node root)
+        {
+            switch (root)
+            {
+                case EmptyNode emptyNode:
+                    return "";
+                case NumNode numNode:
+                    return numNode.Value.ToString();
+                case VarNode varNode:
+                    return varNode.Name.ToString();
+                case AssignNode assignNode:
+                    return TextPrint(assignNode.Var) + " = " + TextPrint(assignNode.Expr);
+                case InvocationNode invocatioNode:
+                    string iResult = invocatioNode.Fn + "(";
+                    for (int i = 0; i < invocatioNode.Args.Count; i++)
+                    {
+                        var arg = invocatioNode.Args[i];
+                        iResult += TextPrint(arg) + (i != invocatioNode.Args.Count - 1 ? ", " : "");
+                    }
+                    return iResult + ")";
+                case BinOpNode operatorNode:
+                    string oResult = "";
+                    if (operatorNode.LeftExpr is NumNode ||
+                        operatorNode.LeftExpr is VarNode ||
+                        operatorNode.LeftExpr is InvocationNode)
+                    {
+                        oResult += TextPrint(operatorNode.LeftExpr);
+                    }
+                    else
+                    {
+                        oResult += '(' + TextPrint(operatorNode.LeftExpr) + ')';
+                    }
+
+                    oResult += ' ' + operatorNode.Op + ' ';
+
+                    if (operatorNode.RightExpr is NumNode ||
+                        operatorNode.RightExpr is VarNode ||
+                        operatorNode.RightExpr is InvocationNode)
+                    {
+                        oResult += TextPrint(operatorNode.RightExpr);
+                    }
+                    else
+                    {
+                        oResult += '(' + TextPrint(operatorNode.RightExpr) + ')';
+                    }
+                    return oResult;
+                default:
+                    throw new NotImplementedException("Node type not implemented yet.");
+            }
+        }
         /// <summary>
         /// Adds indentation to multiline strings.
         /// </summary>
@@ -19,7 +75,7 @@ namespace WordMathTranspiler.MathMLParser.Nodes
         protected static string IndentHelper(string src, int count = 5, bool vSeperator = false)
         {
             string[] split = src.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
-            
+
             if (split.Length > 1)
             {
                 string result = split[0];
@@ -42,64 +98,11 @@ namespace WordMathTranspiler.MathMLParser.Nodes
                 return split[0];
             }
         }
-        public abstract string Print();
-        public abstract bool IsFloatPointOperation();
-        public static string PrettyPrint(Node root)
-        {
-            switch (root)
-            {
-                case EmptyNode emptyNode:
-                    return "";
-                case NumNode numNode:
-                    return numNode.Value.ToString();
-                case VarNode varNode:
-                    return varNode.Name.ToString();
-                case AssignNode assignNode:
-                    return PrettyPrint(assignNode.Var) + " = " + PrettyPrint(assignNode.Expr);
-                case InvocationNode invocatioNode:
-                    string iResult = invocatioNode.Fn + "(";
-                    for (int i = 0; i < invocatioNode.Args.Count; i++)
-                    {
-                        var arg = invocatioNode.Args[i];
-                        iResult += PrettyPrint(arg) + (i != invocatioNode.Args.Count - 1 ? ", " : "");
-                    }
-                    return iResult + ")";
-                case BinOpNode operatorNode:
-                    string oResult = "";
-                    if (operatorNode.LeftExpr is NumNode ||
-                        operatorNode.LeftExpr is VarNode ||
-                        operatorNode.LeftExpr is InvocationNode)
-                    {
-                        oResult += PrettyPrint(operatorNode.LeftExpr);
-                    }
-                    else
-                    {
-                        oResult += '(' + PrettyPrint(operatorNode.LeftExpr) + ')';
-                    }
-
-                    oResult += ' ' + operatorNode.Op + ' ';
-
-                    if (operatorNode.RightExpr is NumNode ||
-                        operatorNode.RightExpr is VarNode ||
-                        operatorNode.RightExpr is InvocationNode)
-                    {
-                        oResult += PrettyPrint(operatorNode.RightExpr);
-                    }
-                    else
-                    {
-                        oResult += '(' + PrettyPrint(operatorNode.RightExpr) + ')';
-                    }
-                    return oResult;
-                default:
-                    throw new NotImplementedException("Node type not implemented yet.");
-            }
-        }
         public static string DOTPrint(Node root)
         {
             int idCounter = 0;
             return String.Format("digraph graphname {0}", "{\n" + DOTHelper(root, ref idCounter).Split('|')[1] + '}');
         }
-
         private static string DOTHelper(Node root, ref int id)
         {
             switch (root)
@@ -144,6 +147,20 @@ namespace WordMathTranspiler.MathMLParser.Nodes
                 default:
                     throw new NotImplementedException("Node type not implemented yet. Type: " + root);
             }
+        }
+
+        // Json serialization
+        public static string SerializeJson(Node root)
+        {
+            JsonSerializerSettings settings = new JsonSerializerSettings();
+            settings.TypeNameHandling = TypeNameHandling.Auto;
+            return JsonConvert.SerializeObject(root, settings);
+        }
+        public static Node DeserializeJson(string json)
+        {
+            JsonSerializerSettings settings = new JsonSerializerSettings();
+            settings.TypeNameHandling = TypeNameHandling.Auto;
+            return JsonConvert.DeserializeObject<StatementNode>(json, settings);
         }
     }
 }

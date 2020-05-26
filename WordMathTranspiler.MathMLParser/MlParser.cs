@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Xml;
 using System.Xml.Linq;
 using WordMathTranspiler.MathMLParser.Nodes;
@@ -11,335 +10,28 @@ namespace WordMathTranspiler.MathMLParser
 {
     public class MlParser
     {
-        public MlParser() {}
-
-        public Node Parse(string path)
+        public static Exception Error(string message, IXmlLineInfo lineInfo)
         {
-            return Parse(XDocument.Load(path, LoadOptions.SetLineInfo).Root);
-        }
-        private Node Parse(XElement doc)
-        {
-            var statements = doc.Elements().ToList();
-
-            Node parsedTreeRoot = new EmptyNode();
-            Node parsedExpression = new EmptyNode();
-            Dictionary<string, NumNode.NumType> symbolTable = new Dictionary<string, NumNode.NumType>();
-            for (int i = 0; i < statements.Count; i++)
-            {
-                if (parsedTreeRoot is EmptyNode)
-                {
-                    parsedTreeRoot = ParseStatement(statements[i], symbolTable);
-                    parsedExpression = parsedTreeRoot;
-                    continue;
-                }
-                (parsedExpression as StatementNode).Next = ParseStatement(statements[i], symbolTable);
-                if ((parsedExpression as StatementNode).Next is StatementNode)
-                {
-                    parsedExpression = (parsedExpression as StatementNode).Next;
-                }
-            }
-
-            return parsedTreeRoot;
+            return new Exception("[MlParser]" + message + (lineInfo.HasLineInfo() ? " Line:" + lineInfo.LineNumber : ""));
         }
 
-        private static Node ParseStatement(XElement token, Dictionary<string, NumNode.NumType> symbolTable)
-        {
-            if (token == null)
-            {
-                return new EmptyNode();
-            }
-    
-            var subTokens = token.Elements().ToList();
-
-            if (subTokens.Count >= 3 &&
-                subTokens[0].Name.LocalName.Equals("mi") &&
-                !subTokens[0].IsEmpty &&
-                subTokens[1].Name.LocalName.Equals("mo") &&
-                !subTokens[1].IsEmpty && subTokens[1].Value == "=")
-            {
-                var assignNode = new AssignNode(
-                    variable: ParseMIVar(subTokens[0]) as VarNode,
-                    expression: ParseExpression(subTokens.Skip(2).ToList())
-                );
-
-                // Add symbol with type
-                // Create class for symbol table? Will need more information for function declarations
-                symbolTable[subTokens[0].Value] = assignNode.IsFloatPointOperation() ? NumNode.NumType.Float : NumNode.NumType.Int;
-                assignNode.Var.Type = symbolTable[subTokens[0].Value];
-
-                return new StatementNode(assignNode, new EmptyNode());
-            }
-            else
-            {
-                return new StatementNode(ParseExpression(subTokens.ToList()), new EmptyNode());
-            }
-        }
-
-        private static Node ParseExpression(XElement token)
-        {
-            return ParseExpression(new List<XElement>() { token });
-        }
-
-        private static Node ParseExpression(List<XElement> tokens)
-        {
-            if (tokens.Count == 0)
-            {
-                return new EmptyNode();
-            }
-
-            // Used to make multiplication tree
-            List<Node> stack = new List<Node>();
-
-            // Go through all sub tokens
-            for (int i = 0; i < tokens.Count; i++)
-            {
-                var cToken = tokens[i];
-                switch (cToken.Name.LocalName)
-                {
-                    // Mrow - groups elements (Found when calling math function)
-                    case "mrow":
-                        stack.Add(ParseMrow(cToken));
-                        continue;
-                    // Msup - element power (x^2) Rewrite
-                    case "msup":
-                        stack.Add(ParseMsup(cToken));
-                        continue;
-                    // MFrac - division element
-                    case "mfrac":
-                        stack.Add(ParseMfrac(cToken));
-                        continue;
-                    // Mo - assignment operator and binary operators
-                    case "mo":
-                        if (cToken.Value == "(")
-                        {
-                            // Opening bracket signifies a new term
-                            stack.Add(ParseAsTerm(tokens, ref i));
-                            continue;
-                        } 
-                        else if (cToken.Value == ")")
-                        {
-                            // Closing bracket cant appear because opening bracket parses both as a term
-                            throw new Exception("Unexpected closing bracket!");
-                        }
-
-                        // Handle binary operations
-                        // Check if there is a rightside argument
-                        if (i + 1 < tokens.Count)
-                        {
-                            switch (cToken.Value)
-                            {
-                                case "*":
-                                case "/":
-                                case "+":
-                                case "-":
-                                    var mul = CreateMultiplicationTree(stack);
-                                    if (mul is EmptyNode)
-                                    {
-                                        throw new Exception("Missing right side argument for operator " + cToken.Value);
-                                    }
-                                    else
-                                    {
-                                        // Clear list because we parsed it to one node
-                                        stack.Clear();
-                                        // Parse the next element as a term and continue loop
-                                        stack.Add(new BinOpNode(mul, cToken.Value, ParseAsTerm(tokens.Skip(++i).ToList(), ref i)));
-                                        continue;
-                                    }
-                                default:
-                                    throw new Exception("Unsupported operation");
-                            }
-                        }
-                        else
-                        {
-                            throw new Exception("Unexpected end of input");
-                        }
-                    // Mi - identifier element (function name or variable name)
-                    // Mtext - mutlicharacter identifier
-                    case "mtext":
-                    case "mi":
-                        stack.Add(ParseMIVar(cToken));
-                        continue;
-                    // Mn - number element
-                    case "mn":
-                        stack.Add(ParseMN(cToken));
-                        continue;
-                    default:
-                        throw new NotImplementedException("Unsupported MathML tag " + cToken.Name.LocalName);
-                }
-            }
-            return CreateMultiplicationTree(stack);
-        }
-
-        /// <summary>
-        /// Handles brackets. Parses elements inside brackets as a term
-        /// </summary>
-        /// <param name="tokens">List of tokens starting with opening bracket</param>
-        /// <param name="offsetIndex">Integer thats going to be offset to the end of the term in the specified tokens list</param>
-        /// <returns></returns>
-        private static Node ParseAsTerm(List<XElement> tokens, ref int offsetIndex)
-        {
-            if (tokens.Count == 0)
-            {
-                return new EmptyNode();
-            }
-
-            if (tokens[0].Value == "(") // Handle brackets
-            {
-                var closeIndex = tokens.FindIndex((x) => x.Name.LocalName == "mo" && x.Value == ")");
-                if (closeIndex == -1)
-                {
-                    throw new Exception("Missing closing bracket");
-                }
-                else
-                {
-                    // Push index to term end
-                    offsetIndex += closeIndex;
-                    // Parse term as expression
-                    return ParseExpression(tokens.GetRange(1, closeIndex - 1));
-                }
-            }
-            else
-            {
-                return ParseExpression(tokens[0]);
-            }
-        }
-
-
-        /// <summary>
-        /// THIS FUNCTION IS A PROTOTYPE
-        /// </summary>
-        /// <param name="tokens"></param>
-        /// <param name="offsetIndex"></param>
-        /// <returns></returns>
-        private static Node CreateTermTree(List<XElement> tokens, ref int offsetIndex)
-        {
-            if (tokens.Count == 0)
-            {
-                return new EmptyNode();
-            }
-
-            var root = ParseAsTerm(tokens, ref offsetIndex);
-            for (int i = 1; i < tokens.Count; i++)
-            {
-                if (tokens[i].Value == "+" || tokens[i].Value == "-")
-                {
-                    return root;
-                }
-                else
-                {
-                    var oldOffsetIndex = offsetIndex;
-                    offsetIndex = offsetIndex + i;
-                    root = new BinOpNode(root, tokens[i].Value, CreateTermTree(tokens.Skip(i + 1).ToList(), ref offsetIndex));
-                    i = i + (offsetIndex - oldOffsetIndex);
-                    offsetIndex++;
-                }
-            }
-            return root;
-        }
-
-        /// <summary>
-        /// Handles mrow elements. Mrow elements contain statements. A math function is also a statement (example: sin(x))
-        /// </summary>
-        /// <param name="el">Mrow as root element</param>
-        /// <returns>Parsed node tree</returns>
-        private static Node ParseMrow(XElement el)
-        {
-            bool isMathFunction(string val)
-            {
-                return val == "sin" || val == "cos" ||
-                       val == "tan" || val == "sec" || 
-                       val == "sech"|| val == "csc" ||
-                       val == "csch"|| val == "cot" || 
-                       val == "coth";
-            }
-
-            var children = el.Elements();
-            int childCount = children.Count();
-            switch (childCount)
-            {
-                case 0:
-                    return new EmptyNode();
-                case 1:
-                    return ParseExpression(children.First());
-                case 2:
-                    if (isMathFunction(children.First().Value))
-                    {
-                        return new InvocationNode(
-                            children.First().Value,
-                            ParseExpression(children.ElementAt(1))
-                        );
-                    }
-                    break;
-                default:
-                    if (isMathFunction(children.First().Value))
-                    {
-                        return new InvocationNode(
-                            children.First().Value,
-                            ParseExpression(children.Skip(2).ToList())
-                        );
-                    }
-                    break;
-            }
-            return ParseExpression(children.ToList());
-        }
-
-        /// <summary>
-        /// Handle msup elements.
-        /// </summary>
-        /// <param name="el"></param>
-        /// <returns></returns>
-        private static Node ParseMsup(XElement el)
-        {
-            var supElements = el.Elements();
-            int count = supElements.Count();
-            if (count == 2)
-            {
-                var baseEl = supElements.ElementAt(0);
-                var supEl = supElements.ElementAt(1);
-                return new InvocationNode("pow", new List<Node> { ParseExpression(baseEl), ParseExpression(supEl) });
-            }
-            else
-            {
-                throw new Exception("Sup expected 2 elements but got " + count);
-            }
-        }
-
-        private static Node ParseMfrac(XElement el)
-        {
-            var elements = el.Elements();
-            int count = elements.Count();
-            if (count == 2)
-            {
-                var left = elements.ElementAt(0);
-                var right = elements.ElementAt(1);
-                return new BinOpNode(ParseExpression(left), "/", ParseExpression(right));
-            }
-            else
-            {
-                throw new Exception("Frac expected 2 elements but got " + count);
-            }
-        }
-
+        #region Tag handlers
         /// <summary>
         /// Handle mi variables.
         /// </summary>
         /// <param name="el"></param>
         /// <returns></returns>
-        private static Node ParseMIVar(XElement el)
+        private static Node HandleMi(MlLexer lex)
         {
-            if (!el.IsEmpty && !string.IsNullOrWhiteSpace(el.Value))
+            if (!string.IsNullOrWhiteSpace(lex.Node.Value))
             {
-                return new VarNode(el.Value);
+                var value = lex.Node.Value;
+                lex.Eat("mi");
+                return new VarNode(value);
             }
             else
             {
-                IXmlLineInfo info = el;
-                if (info.HasLineInfo())
-                {
-                    Console.WriteLine("Warning: Possible error in syntax empty identifier element in XML. Line: {0}", info.LineNumber);
-                }
-
-                return new EmptyNode();
+                throw Error("[Error] - Possible error in syntax. Found empty identifier tag (<mi>) in XML.", lex.GetLineInfo());
             }
         }
 
@@ -348,92 +40,232 @@ namespace WordMathTranspiler.MathMLParser
         /// </summary>
         /// <param name="el"></param>
         /// <returns></returns>
-        private static Node ParseMN(XElement el)
+        private static Node HandleMn(MlLexer lex)
         {
-            if (!el.IsEmpty)
+            if (!string.IsNullOrWhiteSpace(lex.Node.Value))
             {
                 long l;
                 double f;
-                if (long.TryParse(el.Value, out l))
+                if (long.TryParse(lex.Node.Value, out l))
                 {
+                    lex.Eat("mn");
                     return new NumNode(l);
-                } 
-                else if (double.TryParse(el.Value.Replace(',', '.'), out f))
+                }
+                else if (double.TryParse(lex.Node.Value.Replace(',', '.'), out f))
                 {
+                    lex.Eat("mn");
                     return new NumNode(f);
-                } 
+                }
                 else
                 {
-                    throw new Exception("Failed to parse number node.");
+                    throw Error("[Error] - Failed to parse number tag (<mn>).", lex.GetLineInfo());
                 }
             }
             else
             {
-                IXmlLineInfo info = el;
-                if (info.HasLineInfo())
-                {
-                    Console.WriteLine("Warning: Possible error in syntax empty number element in XML. Line: {0}", info.LineNumber);
-                }
-                return new EmptyNode();
+                throw Error("[Error] - Possible error in syntax. Found empty number tag (<mn>) in XML.", lex.GetLineInfo());
             }
         }
 
-        /// <summary>
-        /// Create multiplication tree for nodes in list
-        /// </summary>
-        /// <param name="list"></param>
-        /// <returns></returns>
-        private static Node CreateMultiplicationTree(List<Node> list)
+        private static Node HandleMrow(MlLexer lex)
         {
-            Node result = new EmptyNode();
-            switch (list.Count)
-            {
-                case 1:
-                    result = list[0];
-                    break;
-                default:
-                    int notEmptyIndex = -1;
-                    for (int i = 1; i < list.Count; i++)
-                    {
-                        if (result is EmptyNode)
-                        {
-                            if (list[i] is EmptyNode) // If current node is empty
-                            {
-                                if (notEmptyIndex == -1 && !(list[i - 1] is EmptyNode)) // If previous node is not empty and no waiting nodes
-                                {
-                                    notEmptyIndex = i - 1;
-                                }
-                                continue;
-                            }
+            var deepLex = lex.GetDeepLexer();
+            lex.Eat("mrow");
+            return Expr(deepLex);
+        }
 
-                            if (notEmptyIndex > -1) // If we have a non empty node waiting
-                            {
-                                result = new BinOpNode(list[notEmptyIndex], "*", list[i]);
-                                notEmptyIndex = -1;
-                            }
-                            else // If no nodes are waiting
-                            {
-                                if (list[i - 1] is EmptyNode) // If previous node is empty
-                                {
-                                    continue;
-                                }
-                                result = new BinOpNode(list[i - 1], "*", list[i]);
-                            }
-                        }
-                        else
-                        {
-                            if (list[i] is EmptyNode) // Remove empty nodes
-                            {
-                                continue;
-                            }
-                            BinOpNode temp = result as BinOpNode;
-                            temp.RightExpr = new BinOpNode(temp.RightExpr, "*", list[i]);
-                            result = temp;
-                        }
+        private static Node HandleMfrac(MlLexer lex)
+        {
+            MlLexer fracLex = lex.GetDeepLexer();
+            lex.Eat("mfrac");
+
+            // Expects 2 <mrow> inside <mfrac>
+            var leftLex = fracLex.GetDeepLexer();
+            fracLex.Eat("mrow");
+            var rightLex = fracLex.GetDeepLexer();
+            fracLex.Eat("mrow");
+
+            return new BinOpNode(
+                Expr(leftLex), 
+                "/", 
+                Expr(rightLex)
+            );
+        }
+
+        private static Node HandleMsup(MlLexer lex)
+        {
+            MlLexer supLex = lex.GetDeepLexer();
+            lex.Eat("msup");
+
+            // Expects 2 <mrow> inside <msup>
+            var baseLex = supLex.GetDeepLexer();
+            supLex.Eat("mrow");
+            var powerLex = supLex.GetDeepLexer();
+            supLex.Eat("mrow");
+
+            return new InvocationNode(
+                "pow", 
+                new List<Node> { 
+                    Expr(baseLex), 
+                    Expr(powerLex) 
+                }
+            );
+        }
+        #endregion
+
+        #region AST Build logic
+        /// <summary>
+        /// factor : REAL (mn)
+        ///        | INTEGER (mn)
+        ///        | LPAREN expr RPAREN (mo expr mo)
+        ///        | variable (mtext, mi)
+        ///        | mrow
+        ///        | mfrac
+        /// </summary>
+        /// <param name="lex"></param>
+        /// <returns></returns>
+        private static Node Factor(MlLexer lex)
+        {
+            Node node = new EmptyNode();
+            switch (lex.Node.Name)
+            {
+                case "mn":
+                    node = HandleMn(lex);
+                    return node;
+                case "mtext":
+                case "mi":
+                    node = HandleMi(lex);
+                    return node;
+                case "mrow":
+                    node = HandleMrow(lex);
+                    return node;
+                case "mo":
+                    if (lex.Node.Value == "(")
+                    {
+                        lex.Eat("mo");
+                        node = Expr(lex);
+                        lex.Eat("mo"); // Try eating ')'. Test if its a closing bracket?
+                        return node;
                     }
+                    Console.WriteLine("[Warning] Factor function got <mo> element thats not a bracket.");
                     break;
+                case "mfrac":
+                    node = HandleMfrac(lex);
+                    return node;
+                case "msup":
+                    node = HandleMsup(lex);
+                    return node;
             }
-            return result;
+            return node;
+        }
+        /// <summary>
+        /// term : factor ((MUL | DIV) factor)*
+        /// </summary>
+        /// <param name="lex"></param>
+        /// <returns></returns>
+        private static Node Term(MlLexer lex)
+        {
+            Node node = Factor(lex);
+            while (!lex.IsFinished && 
+                   !(lex.Node.Name == "mo" && 
+                     (lex.Node.Value == "+" || lex.Node.Value == "-" || lex.Node.Value == ")")))
+            {
+                if (lex.Node.Name == "mo")
+                {
+                    string value = lex.Node.Value;
+                    lex.Eat("mo");
+                    switch (value)
+                    {
+                        case "*":
+                        case "/":
+                            node = new BinOpNode(node, value, Factor(lex));
+                            continue;
+                        case "\u2061":
+                            VarNode fn = node as VarNode;
+                            if (fn == null)
+                            {
+                                throw new Exception("Error - Values can only be assigned to a variable node");
+                            }
+                            node = new InvocationNode(fn.Name, Factor(lex));
+                            continue;
+                    }
+                }
+
+                node = new BinOpNode(node, "*", Factor(lex)); //If no operator assume multiplication
+            }
+
+            return node;
+        }
+        /// <summary>
+        /// expr : term ((PLUS | MINUS) term)*
+        /// </summary>
+        /// <param name="el"></param>
+        /// <returns></returns>
+        private static Node Expr(MlLexer lex)
+        {
+            Node node = Term(lex);
+
+            while (!lex.IsFinished && (lex.Node.Name == "mo" && (lex.Node.Value == "+" || lex.Node.Value == "-")))
+            {
+                string value = lex.Node.Value;
+                lex.Eat("mo");
+                node = new BinOpNode(node, value, Term(lex));
+            }
+
+            return node;
+        }
+        private static Node Assignment(MlLexer lex)
+        {
+            Node left = HandleMi(lex);
+            //string op = lex.Current.Value; //Add test to see if theres an assignment operator?
+            lex.Eat("mo"); // Eat '='
+            Node expr = Expr(lex);
+            return new AssignNode((VarNode)left, expr);
+        }
+        private static Node StatementList(MlLexer lex)
+        {
+            Node root = new EmptyNode();
+            Node prevNode = new EmptyNode();
+            while (!lex.IsFinished && lex.Node.Name == "math")
+            {
+                MlLexer statementLex = lex.GetDeepLexer();
+                lex.Eat("math");
+                Node current = new EmptyNode();
+                var laNode = statementLex.LookAhead();
+                if (laNode != null &&
+                    laNode.Name == "mo" &&
+                    laNode.Value == "=")
+                {
+                    current = new StatementNode(Assignment(statementLex), new EmptyNode());
+                }
+                else
+                {
+                    current = new StatementNode(Expr(statementLex), new EmptyNode());
+                }
+
+                root = root is EmptyNode ? current : root;
+                if (prevNode is EmptyNode)
+                {
+                    prevNode = current;
+                }
+                else
+                {
+                    ((StatementNode)prevNode).Next = current;
+                    prevNode = current;
+                }
+            }
+
+            return root;
+        }
+        #endregion
+        public static Node Parse(XElement root)
+        {
+            MlLexer lex = new MlLexer(root);
+            return StatementList(lex);
+        }
+        public static Node Parse(string path)
+        {
+            return Parse(XDocument.Load(path, LoadOptions.SetLineInfo).Root);
         }
     }
 }

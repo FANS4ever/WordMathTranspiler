@@ -3,7 +3,7 @@
   <Class Name="WordMathTranspiler.MathMLParser.MlParser">
     <Position X="10" Y="4.25" Width="2.5" />
     <TypeIdentifier>
-      <HashCode>QAAoAAAAAAAAAAACAAQACAAAAAAAIAAABgABAAAAAAA=</HashCode>
+      <HashCode>QIAgAABQCAAAAAACAAQACAAAAAAkIAAAHgAAAACAJAA=</HashCode>
       <FileName>MlParser.cs</FileName>
     </TypeIdentifier>
   </Class>

@@ -28,5 +28,22 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
             sb.Append("└─R: " + IndentHelper(Expr.Print()));
             return sb.ToString();
         }
+
+        public override bool Equals(object obj)
+        {
+            AssignNode item = obj as AssignNode;
+
+            if (item == null)
+            {
+                return false;
+            }
+
+            return Var.Equals(item.Var) && Expr.Equals(item.Expr);
+        }
+
+        public override int GetHashCode()
+        {
+            return Var.GetHashCode() ^ Expr.GetHashCode();
+        }
     }
 }

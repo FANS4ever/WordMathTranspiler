@@ -25,5 +25,22 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Data
         {
             return Name;
         }
+
+        public override bool Equals(object obj)
+        {
+            VarNode item = obj as VarNode;
+
+            if (item == null)
+            {
+                return false;
+            }
+
+            return item.Name.Equals(Name) && item.Type.Equals(Type);
+        }
+
+        public override int GetHashCode()
+        {
+            return (Name, Type).GetHashCode();
+        }
     }
 }

@@ -1,14 +1,19 @@
-﻿namespace WordMathTranspiler.MathMLParser.Nodes.Data
+﻿using Newtonsoft.Json;
+
+namespace WordMathTranspiler.MathMLParser.Nodes.Data
 {
     public class NumNode : Node
     {
-        private object _value;
-        public enum NumType {
+        public enum NumType
+        {
             Empty,
             Int,
             Float
         }
 
+        private object _value;
+        
+        [JsonIgnore]
         public NumType Type { 
             get {
                 switch (_value)
@@ -58,6 +63,23 @@
         public override string Print()
         {
             return Value.ToString();
+        }
+
+        public override bool Equals(object obj)
+        {
+            NumNode item = obj as NumNode;
+
+            if (item == null)
+            {
+                return false;
+            }
+
+            return item.Value.Equals(Value);
+        }
+
+        public override int GetHashCode()
+        {
+            return (Value).GetHashCode();
         }
     }
 }

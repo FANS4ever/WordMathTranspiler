@@ -32,5 +32,22 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
             sb.Append("└─R: " + IndentHelper(RightExpr.Print()));
             return sb.ToString();
         }
+
+        public override bool Equals(object obj)
+        {
+            BinOpNode item = obj as BinOpNode;
+
+            if (item == null)
+            {
+                return false;
+            }
+
+            return LeftExpr.Equals(item.LeftExpr) && RightExpr.Equals(item.RightExpr) && Op.Equals(item.Op);
+        }
+
+        public override int GetHashCode()
+        {
+            return LeftExpr.GetHashCode() ^ RightExpr.GetHashCode() ^ Op.GetHashCode();
+        }
     }
 }

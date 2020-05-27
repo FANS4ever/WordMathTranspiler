@@ -60,11 +60,15 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Data
         {
             return Type == NumType.Float;
         }
-        public override string PrintHelper()
+        public override string TextPrint()
         {
             return Value.ToString();
         }
-        public override string DotHelper(ref int id)
+        public override string TreePrint()
+        {
+            return Value.ToString();
+        }
+        public override string DotPrint(ref int id)
         {
             string numId = $"num{id++}";
             return $"{numId}|{numId}[label=\"{Value}\"];\n";

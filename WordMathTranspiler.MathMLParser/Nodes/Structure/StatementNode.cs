@@ -40,20 +40,24 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
         {
             return Body.IsFloatPointOperation();
         }
-        public override string PrintHelper()
+        public override string TextPrint()
+        {
+            return $"{Body.TextPrint()}\n{Next.TextPrint()}";
+        }
+        public override string TreePrint()
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("┌ Statement type:" + Type.ToString() + " isFloat: " + IsFloatPointOperation());
-            sb.AppendLine("├─L: " + IndentHelper(Body.PrintHelper(), drawSeperator: true));
-            sb.Append("└─R: " + IndentHelper(Next.PrintHelper()));
+            sb.AppendLine("├─L: " + IndentHelper(Body.TreePrint(), drawSeperator: true));
+            sb.Append("└─R: " + IndentHelper(Next.TreePrint()));
             return sb.ToString();
         }
-        public override string DotHelper(ref int id)
+        public override string DotPrint(ref int id)
         {
             string statId = $"stat{id++}";
             string statDecl = $"{statId}[label=\"Statement\"];\n";
-            var statBodyData = Body.DotHelper(ref id).Split('|');
-            var statNextData = Next.DotHelper(ref id).Split('|');
+            var statBodyData = Body.DotPrint(ref id).Split('|');
+            var statNextData = Next.DotPrint(ref id).Split('|');
             return $"{statId}|{statDecl}{statBodyData[1]}{statNextData[1]}{statId} -> {statBodyData[0]};\n{statId} -> {statNextData[0]};\n";
         }
         #endregion

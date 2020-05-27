@@ -1,5 +1,4 @@
 ﻿using System;
-using WordMathTranspiler.MathMLParser.Nodes.Data;
 using WordMathTranspiler.MathMLParser.Nodes.Structure;
 using Newtonsoft.Json;
 
@@ -13,8 +12,9 @@ namespace WordMathTranspiler.MathMLParser.Nodes
         #region Abstract methods   
         // Maybe move to semantic analyzer?
         public abstract bool IsFloatPointOperation();
-        public abstract string PrintHelper();
-        public abstract string DotHelper(ref int id);
+        public abstract string TextPrint();
+        public abstract string TreePrint();
+        public abstract string DotPrint(ref int id);
         #endregion
 
         #region Helpers
@@ -28,7 +28,7 @@ namespace WordMathTranspiler.MathMLParser.Nodes
         public static string BuildDotGraph(Node root)
         {
             int idCounter = 0;
-            return $"digraph graphname{{\n{ root.DotHelper(ref idCounter).Split('|')[1]}}}";
+            return $"digraph graphname{{\n{ root.DotPrint(ref idCounter).Split('|')[1]}}}";
         }
         protected static string IndentHelper(
             string src, 

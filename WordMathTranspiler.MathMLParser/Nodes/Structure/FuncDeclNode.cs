@@ -27,28 +27,38 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
             // For now assume that its true
             return true;
         }
-        public override string PrintHelper()
+        public override string TextPrint()
+        {
+            string iResult = $"{Name}(";
+            for (int i = 0; i < Params.Count; i++)
+            {
+                var arg = Params[i];
+                iResult += arg.TextPrint() + (i != Params.Count - 1 ? ", " : "");
+            }
+            return $"{iResult}) = {Body.TextPrint()}";
+        }
+        public override string TreePrint()
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("┌ " + $"Func: {Name}");
             for (int i = 0; i < Params.Count; i++)
             {
-                sb.AppendLine("├─Param" + i + ": " + IndentHelper(Params[i].PrintHelper(), indentCount: 9 + i.ToString().Length, drawSeperator: true));
+                sb.AppendLine("├─Param" + i + ": " + IndentHelper(Params[i].TreePrint(), indentCount: 9 + i.ToString().Length, drawSeperator: true));
             }
-            sb.Append("└─Body: " + IndentHelper(Body.PrintHelper(), 8));
+            sb.Append("└─Body: " + IndentHelper(Body.TreePrint(), 8));
             return sb.ToString();
         }
-        public override string DotHelper(ref int id)
+        public override string DotPrint(ref int id)
         {
             string fdeclId = $"funcDecl{id++}";
             string fdeclDecl = $"{fdeclId}[label=\"FuncDecl:{Name}\"]\n";
             string fdeclResult = fdeclDecl;
             for (int i = 0; i < Params.Count; i++)
             {
-                var paramData = Params[i].DotHelper(ref id).Split('|');
+                var paramData = Params[i].DotPrint(ref id).Split('|');
                 fdeclResult += $"{paramData[1]}{fdeclId} -> {paramData[0]}[label=\"Param{i}\"];\n";
             }
-            var fdeclBody = Body.DotHelper(ref id).Split('|');
+            var fdeclBody = Body.DotPrint(ref id).Split('|');
             return $"{fdeclId}|{fdeclResult}{fdeclBody[1]}{fdeclId} -> {fdeclBody[0]}[label=\"Body\"];\n";
         }
         #endregion

@@ -1,5 +1,6 @@
 ﻿namespace WordMathTranspiler.MathMLParser.Nodes.Data
 {
+    //Consider making this a singleton class
     public class EmptyNode : Node
     {
         /// <summary>
@@ -12,12 +13,15 @@
         {
             return false;
         }
-        public override string PrintHelper()
+        public override string TextPrint()
+        {
+            return string.Empty;
+        }
+        public override string TreePrint()
         {
             return "EmptyNode";
         }
-
-        public override string DotHelper(ref int id)
+        public override string DotPrint(ref int id)
         {
             string emptyId = $"E{id++}";
             return $"{emptyId}|{emptyId}[label=\"Empty\"];\n";

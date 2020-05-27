@@ -20,20 +20,24 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
         {
             return Expr.IsFloatPointOperation();
         }
-        public override string PrintHelper()
+        public override string TextPrint()
+        {
+            return Var.TextPrint() + " = " + Expr.TextPrint();
+        }
+        public override string TreePrint()
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("┌ =");
-            sb.AppendLine("├─L: " + IndentHelper(Var.PrintHelper(), drawSeperator: true));
-            sb.Append("└─R: " + IndentHelper(Expr.PrintHelper()));
+            sb.AppendLine("├─L: " + IndentHelper(Var.TreePrint(), drawSeperator: true));
+            sb.Append("└─R: " + IndentHelper(Expr.TreePrint()));
             return sb.ToString();
         }
-        public override string DotHelper(ref int id)
+        public override string DotPrint(ref int id)
         {
             string assignId = $"assign{id++}";
             string assignDecl = $"{assignId}[label=\"=\"];\n";
-            var assignIdentData = Var.DotHelper(ref id).Split('|');
-            var assignExprData = Expr.DotHelper(ref id).Split('|');
+            var assignIdentData = Var.DotPrint(ref id).Split('|');
+            var assignExprData = Expr.DotPrint(ref id).Split('|');
             return $"{assignId}|{assignDecl}{assignIdentData[1]}{assignExprData[1]}{assignId} -> {assignIdentData[0]};\n{assignId} -> {assignExprData[0]};\n";
         }
         #endregion

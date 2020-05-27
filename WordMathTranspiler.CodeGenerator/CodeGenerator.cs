@@ -21,8 +21,8 @@ namespace WordMathTranspiler.CodeGenerator
 
         public void Init()
         {
-            this.workspace = new AdhocWorkspace();
-            this.generator = SyntaxGenerator.GetGenerator(workspace, LanguageNames.CSharp);
+            workspace = new AdhocWorkspace();
+            generator = SyntaxGenerator.GetGenerator(workspace, LanguageNames.CSharp);
         }
 
         public SyntaxTree Generate(Node root)
@@ -45,7 +45,7 @@ namespace WordMathTranspiler.CodeGenerator
                 do
                 {
                     var compiledStatement = RecursiveVisit(currentStatement.Body, ref compiledStatements);
-                    compiledStatements.Add(CreateConsole(generator, "Evaluating -> " + RecursivePrettyPrint(currentStatement.Body)));
+                    compiledStatements.Add(CreateConsole(generator, "Evaluating -> " + currentStatement.Body.TextPrint()));
                     if (currentStatement.Type == StatementNode.StatementType.DeclarationStatement)
                     {
                         compiledStatements.Add(compiledStatement);
@@ -154,63 +154,6 @@ namespace WordMathTranspiler.CodeGenerator
                 default:
                     throw new NotImplementedException("Node type not implemented yet.");
             }
-        }
-
-        /// <summary>
-        /// Parses an AST tree for a statement to a human readable format.
-        /// </summary>
-        /// <param name="root">Root node of an AST tree for a statement</param>
-        /// <returns>human readable string</returns>
-        private static string RecursivePrettyPrint(Node root)
-        {
-            switch (root)
-            {
-                case EmptyNode emptyNode:
-                    return "";
-                case NumNode numNode:
-                    return numNode.Value.ToString();
-                case IdentifierNode varNode:
-                    return varNode.Name.ToString();
-                case AssignNode assignNode:
-                    return RecursivePrettyPrint(assignNode.Var) + " = " + RecursivePrettyPrint(assignNode.Expr);
-                case InvocationNode invocatioNode:
-                    string iResult = invocatioNode.Fn + "(";
-                    for (int i = 0; i < invocatioNode.Args.Count; i++)
-                    {
-                        var arg = invocatioNode.Args[i];
-                        iResult += RecursivePrettyPrint(arg) + (i != invocatioNode.Args.Count - 1 ? ", " : "");
-                    }
-                    return iResult + ")";
-                case BinOpNode operatorNode:
-                    string oResult = "";
-                    if (operatorNode.LeftExpr is NumNode || 
-                        operatorNode.LeftExpr is IdentifierNode || 
-                        operatorNode.LeftExpr is InvocationNode)
-                    {
-                        oResult += RecursivePrettyPrint(operatorNode.LeftExpr);
-                    }
-                    else
-                    {
-                        oResult += '(' + RecursivePrettyPrint(operatorNode.LeftExpr) + ')';
-                    }
-
-                    oResult += ' ' + operatorNode.Op + ' ';
-
-                    if (operatorNode.RightExpr is NumNode || 
-                        operatorNode.RightExpr is IdentifierNode ||
-                        operatorNode.RightExpr is InvocationNode)
-                    {
-                        oResult += RecursivePrettyPrint(operatorNode.RightExpr);
-                    }
-                    else
-                    {
-                        oResult += '(' +  RecursivePrettyPrint(operatorNode.RightExpr) + ')';
-                    }
-                    return oResult;
-                default:
-                    throw new NotImplementedException("Node type not implemented yet.");
-            }
-
         }
 
         #region SyntaxNode creation helpers

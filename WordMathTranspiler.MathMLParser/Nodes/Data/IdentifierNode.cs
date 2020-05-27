@@ -21,11 +21,15 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Data
         {
             return false;
         }
-        public override string PrintHelper()
+        public override string TextPrint()
+        {
+            return Name.ToString();
+        }
+        public override string TreePrint()
         {
             return Name;
         }
-        public override string DotHelper(ref int id)
+        public override string DotPrint(ref int id)
         {
             string identId = $"identifier{id++}";
             return $"{identId}|{identId}[label=\"{Name}\"];\n";

@@ -51,7 +51,7 @@ namespace WordMathTranspiler.CodeGenerator
 
                     using (FileStream runFileStream = new FileStream(Path.Combine(resultDir, "run.bat"), FileMode.Create))
                     {
-                        runFileStream.Write(Encoding.UTF8.GetBytes(GenerateRunFile()));
+                        runFileStream.Write(Encoding.UTF8.GetBytes(GenerateWindowsRunScript()));
                     }
                 }
                 else
@@ -107,7 +107,7 @@ namespace WordMathTranspiler.CodeGenerator
             }
         }
 
-        private static string GenerateRunFile()
+        private static string GenerateWindowsRunScript()
         {
             StringBuilder builder = new StringBuilder();
             builder.AppendLine("@ECHO OFF");

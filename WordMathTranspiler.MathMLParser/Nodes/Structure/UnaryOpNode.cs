@@ -17,18 +17,22 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
         {
             return Expr.IsFloatPointOperation();
         }
-        public override string PrintHelper()
+        public override string TextPrint()
+        {
+            return $"({Op}({Expr.TextPrint()}))";
+        }
+        public override string TreePrint()
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("┌ Unary " + Op);
-            sb.Append("└─Expr: " + IndentHelper(Expr.PrintHelper(), 8));
+            sb.Append("└─Expr: " + IndentHelper(Expr.TreePrint(), 8));
             return sb.ToString();
         }
-        public override string DotHelper(ref int id)
+        public override string DotPrint(ref int id)
         {
             string unOpId = $"unOp{id++}";
             string unOpDecl = $"{unOpId}[label=\"Unary:{Op}\"];\n";
-            var unOpExprData = Expr.DotHelper(ref id).Split('|');
+            var unOpExprData = Expr.DotPrint(ref id).Split('|');
             return $"{unOpId}|{unOpDecl}{unOpExprData[1]}{unOpId} -> {unOpExprData[0]};\n";
         }
         #endregion

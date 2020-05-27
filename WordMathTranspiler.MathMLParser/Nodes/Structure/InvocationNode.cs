@@ -36,7 +36,17 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
             // For now assume that its true
             return true;
         }
-        public override string PrintHelper()
+        public override string TextPrint()
+        {
+            string iResult = $"{Fn}(";
+            for (int i = 0; i < Args.Count; i++)
+            {
+                var arg = Args[i];
+                iResult += arg.TextPrint() + (i != Args.Count - 1 ? ", " : "");
+            }
+            return $"{iResult})";
+        }
+        public override string TreePrint()
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("┌ " + Fn);
@@ -47,28 +57,28 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
                 {
                     if (i == Args.Count - 1)
                     {
-                        sb.Append("└─Arg" + i + ": " + IndentHelper(Args[i].PrintHelper(), 7 + i.ToString().Length));
+                        sb.Append("└─Arg" + i + ": " + IndentHelper(Args[i].TreePrint(), 7 + i.ToString().Length));
                     }
                     else
                     {
-                        sb.AppendLine("├─Arg" + i + ": " + IndentHelper(Args[i].PrintHelper(), indentCount: 7 + i.ToString().Length, drawSeperator: true));
+                        sb.AppendLine("├─Arg" + i + ": " + IndentHelper(Args[i].TreePrint(), indentCount: 7 + i.ToString().Length, drawSeperator: true));
                     }
                 }
             }
             else
             {
-                sb.Append("└─Arg1: " + IndentHelper(Args[0].PrintHelper(), 8));
+                sb.Append("└─Arg1: " + IndentHelper(Args[0].TreePrint(), 8));
             }
             return sb.ToString();
         }
-        public override string DotHelper(ref int id)
+        public override string DotPrint(ref int id)
         {
             string invocId = $"invoc{id++}";
             string invocDecl = $"{invocId}[label=\"{Fn}\"]\n";
             string invocResult = invocDecl;
             for (int i = 0; i < Args.Count; i++)
             {
-                var argData = Args[i].DotHelper(ref id).Split('|');
+                var argData = Args[i].DotPrint(ref id).Split('|');
                 invocResult += $"{argData[1]}{invocId} -> {argData[0]};\n";
             }
             return $"{invocId}|{invocResult}";

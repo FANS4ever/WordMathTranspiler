@@ -294,9 +294,16 @@ namespace WordMathTranspiler.MathMLParser
             lex.Eat("mo"); // Eat '='
             return new FuncDeclNode(funcNameNode.Name, parameters, Expr(lex));
         }
-        private static Node VariableDeclaration(MlLexer lex)
+        private static Node VariableDeclarationMi(MlLexer lex)
         {
             Node left = HandleMi(lex);
+            lex.Eat("mo"); // Eat '='
+            Node expr = Expr(lex);
+            return new AssignNode((IdentifierNode)left, expr);
+        }
+        private static Node VariableDeclarationMtext(MlLexer lex)
+        {
+            Node left = HandleMtext(lex);
             lex.Eat("mo"); // Eat '='
             Node expr = Expr(lex);
             return new AssignNode((IdentifierNode)left, expr);
@@ -306,7 +313,9 @@ namespace WordMathTranspiler.MathMLParser
             switch (lex.Node.Name)
             {
                 case "mi":
-                    return VariableDeclaration(lex);
+                    return VariableDeclarationMi(lex);
+                case "mtext":
+                    return VariableDeclarationMtext(lex);
                 case "mrow":
                     return FunctionDeclaration(lex);
                 default:

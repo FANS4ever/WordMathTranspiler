@@ -3,7 +3,7 @@ using System.Text;
 
 namespace WordMathTranspiler.MathMLParser.Nodes.Structure
 {
-    class FuncDeclNode: Node
+    public class FuncDeclNode: Node
     {
         public string Name { get; set; }
         public List<Node> Params { get; set; }

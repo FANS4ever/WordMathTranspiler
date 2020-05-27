@@ -1,5 +1,4 @@
 ﻿using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Editing;
 using System;
 using System.Collections.Generic;
@@ -18,180 +17,258 @@ namespace WordMathTranspiler.CodeGenerator
         {
             Init();
         }
-
         public void Init()
         {
             workspace = new AdhocWorkspace();
             generator = SyntaxGenerator.GetGenerator(workspace, LanguageNames.CSharp);
         }
-
         public SyntaxTree Generate(Node root)
         {
-            var namespaceNode   = generator.NamespaceDeclaration("TranspiledMML", BuildProgram(root));
             var usingDirectives = generator.NamespaceImportDeclaration("System");
+            var namespaceNode   = generator.NamespaceDeclaration("TranspiledMML", BuildClass(root));
             var compilationUnit = generator.CompilationUnit(usingDirectives, namespaceNode).NormalizeWhitespace();
 
             Console.WriteLine(compilationUnit);
             return compilationUnit.SyntaxTree;
         }
-
-        private SyntaxNode BuildProgram(Node root)
+        private SyntaxNode BuildClass(Node root)
+        {
+            List<SyntaxNode> methodDeclarations = BuildMethods(root);
+            // Add custom name setting
+            return generator.ClassDeclaration(
+                name: "Program",
+                typeParameters: null,
+                accessibility: Accessibility.Public,
+                modifiers: DeclarationModifiers.None,
+                baseType: null,
+                interfaceTypes: null,
+                members: methodDeclarations
+            );
+        }
+        private List<SyntaxNode> BuildMethods(Node root)
         {
             if (root is StatementNode)
             {
-                List<SyntaxNode> compiledStatements = new List<SyntaxNode>();
-                var currentStatement = (root as StatementNode);
-
-                do
+                List<SyntaxNode> classContext = new List<SyntaxNode>();
+                List<SyntaxNode> mainContext = new List<SyntaxNode>();
+                StatementNode currentStatement = root as StatementNode;
+                while (currentStatement != null)
                 {
-                    var compiledStatement = RecursiveVisit(currentStatement.Body, ref compiledStatements);
-                    compiledStatements.Add(CreateConsole(generator, "Evaluating -> " + currentStatement.Body.TextPrint()));
-                    if (currentStatement.Type == StatementNode.StatementType.DeclarationStatement)
+                    switch (currentStatement.Body)
                     {
-                        compiledStatements.Add(compiledStatement);
-                        string varName = (currentStatement.Body as AssignNode).Var.Name;
-                        compiledStatements.Add(CreateConsole(generator, varName + " = {0}", new string[] { varName }));
-                    }
-                    else
-                    {
-                        // Non declaration statements get printed to screen
-                        compiledStatements.Add(CreateConsole(generator, compiledStatement));
-                    }
+                        case AssignNode assignNode:
+                            {
+                                string methodName = $"Init{assignNode.Var.Name}";
+                                SyntaxNode method = generator.MethodDeclaration(
+                                    name: methodName,
+                                    accessibility: Accessibility.Public,
+                                    modifiers: DeclarationModifiers.Static,
+                                    returnType: generator.TypeExpression(SpecialType.System_Double),
+                                    statements: new SyntaxNode[] { generator.ReturnStatement(VisitExpression(assignNode.Expr)) }
+                                );
 
+                                //Define variable as a field and assign method as value.
+                                //Add getter if order of math execution isnt important
+                                SyntaxNode field = generator.FieldDeclaration(
+                                    name: assignNode.Var.Name,
+                                    type: generator.TypeExpression(SpecialType.System_Double),
+                                    accessibility: Accessibility.Public,
+                                    modifiers: DeclarationModifiers.Static,
+                                    initializer: generator.InvocationExpression(generator.IdentifierName(methodName))
+                                );
+                                classContext.Add(field);
+                                classContext.Add(method);
+
+                                SyntaxNode console = CreateConsole(generator, $"{assignNode.Var.Name} = {{0}}", assignNode.Var.Name);
+                                mainContext.Add(console);
+                                break;
+                            }
+                        case FuncDeclNode funcDeclNode:
+                            {
+                                string methodName = $"Func{funcDeclNode.Name}";
+
+                                SyntaxList<SyntaxNode> parameters = new SyntaxList<SyntaxNode>();
+                                foreach (IdentifierNode node in funcDeclNode.Params)
+                                {
+                                    parameters = parameters.Add(
+                                        generator.ParameterDeclaration(
+                                            name: node.Name,
+                                            type: generator.TypeExpression(SpecialType.System_Double)
+                                        )
+                                    );
+                                }
+
+                                SyntaxNode method = generator.MethodDeclaration(
+                                    name: methodName,
+                                    accessibility: Accessibility.Public,
+                                    modifiers: DeclarationModifiers.Static,
+                                    returnType: generator.TypeExpression(SpecialType.System_Double),
+                                    parameters: parameters,
+                                    statements: new SyntaxNode[] { generator.ReturnStatement(VisitExpression(funcDeclNode.Body)) }
+                                );
+                                classContext.Add(method);
+                                break;
+                            }
+                        default:
+                            {
+                                SyntaxNode printFunction = CreateConsole(generator, currentStatement.Body.TextPrint());
+                                SyntaxNode printValue = CreateConsole(generator, VisitExpression(currentStatement.Body));
+                                mainContext.Add(printFunction);
+                                mainContext.Add(printValue);
+                                break;
+                            }
+                    }
                     currentStatement = currentStatement.Next as StatementNode;
-                } while (currentStatement is StatementNode);
+                }
 
-                var mainMethodNode = CreateEntryPoint(generator, compiledStatements);
-                var classNode = CreateClass(generator, "Program", new SyntaxNode[] { mainMethodNode });
-                return classNode;
+                // Create main method
+                SyntaxNode main = generator.MethodDeclaration(
+                    name: "Main",
+                    modifiers: DeclarationModifiers.Static,
+                    statements: mainContext
+                );
+                classContext.Add(main);
+
+                return classContext;
+
+
+                //do
+                //{
+                //    var compiledStatement = VisitNode(currentStatement.Body, ref builtMethods);
+                //    builtMethods.Add(CreateConsole(generator, "Evaluating -> " + currentStatement.Body.TextPrint()));
+                //    if (currentStatement.Type == StatementNode.StatementType.DeclarationStatement)
+                //    {
+                //        builtMethods.Add(compiledStatement);
+                //        string varName = (currentStatement.Body as AssignNode).Var.Name;
+                //        builtMethods.Add(CreateConsole(generator, varName + " = {0}", new string[] { varName }));
+                //    }
+                //    else
+                //    {
+                //        // Non declaration statements get printed to screen
+                //        builtMethods.Add(CreateConsole(generator, compiledStatement));
+                //    }
+
+                //    currentStatement = currentStatement.Next as StatementNode;
+                //} while (currentStatement is StatementNode);
+
+                //// Create main method
+                //SyntaxNode mainMethod = CreateEntryPoint(generator, mainMethodStatements);
+                //methodDeclarations.Add(mainMethod);
+                //return ;
             }
             else
             {
                 throw new Exception("Expected root StatementNode but got " + root.GetType());
             }
         }
-
-        /// <summary>
-        /// Recursivelly builds C# code by traversing ast
-        /// </summary>
-        /// <param name="root">Root node of an AST tree for a statement</param>
-        private SyntaxNode RecursiveVisit(Node root, ref List<SyntaxNode> declared)
+        #region Visitor methods
+        private SyntaxNode VisitExpression(Node root)
         {
             switch (root)
             {
                 case EmptyNode emptyNode:
                     throw new Exception("Unexpected empty node inside statement");
                 case NumNode numNode:
-                    return generator.LiteralExpression(numNode.Value);
-                case IdentifierNode varNode:
-                    switch (varNode.Name)
-                    {
-                        case "π": // 3.14...
-                            return generator.MemberAccessExpression(
-                                generator.IdentifierName("Math"), "PI"
-                            );
-                        default:
-                            return generator.IdentifierName(varNode.Name);
-                    }
-                case AssignNode assignNode:
-                    return generator.LocalDeclarationStatement(
-                        generator.TypeExpression(assignNode.IsFloatPointOperation() ? SpecialType.System_Double : SpecialType.System_Int64),
-                        assignNode.Var.Name,
-                        RecursiveVisit(assignNode.Expr, ref declared)
-                    );
+                    return VisitNumNode(numNode);
+                case IdentifierNode identNode:
+                    return VisitIdentifierNode(identNode);
                 case InvocationNode invocationNode:
-                    if (invocationNode.IsBuiltinFunction)
-                    {
-                        var identifier = generator.IdentifierName("Math");
-                        var expression = generator.MemberAccessExpression(
-                            identifier,
-                            invocationNode.Fn?.Substring(0, 1).ToString().ToUpper() + invocationNode.Fn?.Substring(1).ToLower() //First letter to uppercase
-                        );
-
-                        SyntaxList<SyntaxNode> arguments = new SyntaxList<SyntaxNode>();
-                        foreach (var arg in invocationNode.Args)
-                        {
-                            //Identifier for var nodes?
-                            //var nameExpression = generator.IdentifierName(argName);
-                            var nameArg = generator.Argument(RecursiveVisit(arg, ref declared));
-                            arguments = arguments.Add(nameArg);
-                        }
-                        return generator.InvocationExpression(expression, arguments);
-                    }
-                    else
-                    {
-                        throw new NotImplementedException("Custom functions not implemented yet.");
-                    }
-                case BinOpNode operatorNode:
-                    switch (operatorNode.Op)
-                    {
-                        case "+":
-                            return generator.AddExpression(
-                                RecursiveVisit(operatorNode.LeftExpr, ref declared),
-                                RecursiveVisit(operatorNode.RightExpr, ref declared)
-                            );
-                        case "-":
-                            return generator.SubtractExpression(
-                                RecursiveVisit(operatorNode.LeftExpr, ref declared),
-                                RecursiveVisit(operatorNode.RightExpr, ref declared)
-                            );  
-                        case "*":
-                            return generator.MultiplyExpression(
-                                 RecursiveVisit(operatorNode.LeftExpr, ref declared),
-                                 RecursiveVisit(operatorNode.RightExpr, ref declared)
-                            );
-                        case "/":
-                            return generator.DivideExpression(
-                                generator.CastExpression(
-                                    generator.TypeExpression(SpecialType.System_Double),
-                                    RecursiveVisit(operatorNode.LeftExpr, ref declared)
-                                ),
-                                RecursiveVisit(operatorNode.RightExpr, ref declared)
-                            );
-                        default:
-                            throw new NotImplementedException("Operator " + operatorNode.Op + " is not implemented yet.");
-                    }
+                    return VisitInvocationNode(invocationNode);
+                case BinOpNode opNode:
+                    return VisitBinOpNode(opNode);
+                case UnaryOpNode uOpNode:
+                    return VisitUnaryOpNode(uOpNode);
                 default:
                     throw new NotImplementedException("Node type not implemented yet.");
             }
         }
+        private SyntaxNode VisitBinOpNode(BinOpNode node)
+        {
+            switch (node.Op)
+            {
+                case "+":
+                    return generator.AddExpression(
+                        VisitExpression(node.LeftExpr),
+                        VisitExpression(node.RightExpr)
+                    );
+                case "-":
+                    return generator.SubtractExpression(
+                        VisitExpression(node.LeftExpr),
+                        VisitExpression(node.RightExpr)
+                    );
+                case "*":
+                    return generator.MultiplyExpression(
+                         VisitExpression(node.LeftExpr),
+                         VisitExpression(node.RightExpr)
+                    );
+                case "/":
+                    return generator.DivideExpression(
+                        generator.CastExpression(
+                            generator.TypeExpression(SpecialType.System_Double),
+                            VisitExpression(node.LeftExpr)
+                        ),
+                        VisitExpression(node.RightExpr)
+                    );
+                default:
+                    throw new NotImplementedException("Operator " + node.Op + " is not implemented yet.");
+            }
+        }
+        private SyntaxNode VisitInvocationNode(InvocationNode node)
+        {
+            if (node.IsBuiltinFunction)
+            {
+                var identifier = generator.IdentifierName("Math");
+                var expression = generator.MemberAccessExpression(
+                    identifier,
+                    node.Fn?.Substring(0, 1).ToString().ToUpper() + node.Fn?.Substring(1).ToLower() //First letter to uppercase
+                );
+
+                SyntaxList<SyntaxNode> arguments = new SyntaxList<SyntaxNode>();
+                foreach (var arg in node.Args)
+                {
+                    //Identifier for var nodes?
+                    //var nameExpression = generator.IdentifierName(argName);
+                    var nameArg = generator.Argument(VisitExpression(arg));
+                    arguments = arguments.Add(nameArg);
+                }
+                return generator.InvocationExpression(expression, arguments);
+            }
+            else
+            {
+                throw new NotImplementedException("Custom functions not implemented yet.");
+            }
+        }
+        private SyntaxNode VisitUnaryOpNode(UnaryOpNode node)
+        {
+            switch (node.Op)
+            {
+                case "+":
+                    return VisitExpression(node.Expr);
+                case "-":
+                    return generator.NegateExpression(VisitExpression(node.Expr));
+                default:
+                    throw new NotImplementedException();
+            }
+        }
+        private SyntaxNode VisitIdentifierNode(IdentifierNode node)
+        {
+            switch (node.Name)
+            {
+                case "π": // 3.14...
+                    return generator.MemberAccessExpression(
+                        generator.IdentifierName("Math"), "PI"
+                    );
+                default:
+                    return generator.IdentifierName(node.Name);
+            }
+        }
+        private SyntaxNode VisitNumNode(NumNode node)
+        {
+            return generator.LiteralExpression(node.Value);
+        }
+        #endregion
 
         #region SyntaxNode creation helpers
-        /// <summary>
-        /// Creates a syntax node that represents the main method
-        /// </summary>
-        /// <param name="generator"></param>
-        /// <param name="statements"></param>
-        /// <returns></returns>
-        public static SyntaxNode CreateEntryPoint(SyntaxGenerator generator, IEnumerable<SyntaxNode> statements)
-        {
-            var mainMethod = generator.MethodDeclaration(
-                name: "Main",
-                modifiers: DeclarationModifiers.Static,
-                statements: statements
-            );
-
-            return mainMethod;
-        }
-        /// <summary>
-        /// Creates a SyntaxNode that represents a class
-        /// </summary>
-        /// <param name="generator"></param>
-        /// <param name="className"></param>
-        /// <param name="members"></param>
-        /// <returns></returns>
-        public static SyntaxNode CreateClass(SyntaxGenerator generator, string className, IEnumerable<SyntaxNode> members)
-        {
-            return generator.ClassDeclaration(
-              name: className, 
-              typeParameters: null,
-              accessibility: Accessibility.Public,
-              modifiers: DeclarationModifiers.None,
-              baseType: null,
-              interfaceTypes: null,
-              members: members
-            );
-        }
         /// <summary>
         /// Creates a syntax node that represents a Console.WriteLine
         /// </summary>
@@ -199,36 +276,33 @@ namespace WordMathTranspiler.CodeGenerator
         /// <param name="format"></param>
         /// <param name="argumentNames"></param>
         /// <returns></returns>
-        public static SyntaxNode CreateConsole(SyntaxGenerator generator, object format = null, IEnumerable<string> argumentNames = null)
+        public static SyntaxNode CreateConsole(SyntaxGenerator generator, SyntaxNode identifierNode)
         {
             var identifier = generator.IdentifierName("Console");
             var expression = generator.MemberAccessExpression(identifier, "WriteLine");
+            return generator.InvocationExpression(expression, identifierNode);
+        }
+        public static SyntaxNode CreateConsole(SyntaxGenerator generator, string format, params string[] identifiers)
+        {
+            var identifier = generator.IdentifierName("Console");
+            var expression = generator.MemberAccessExpression(identifier, "WriteLine");
+           
+            SyntaxList<SyntaxNode> arguments = new SyntaxList<SyntaxNode>();
 
-            // If syntax node is passed as the format argument print the syntax node
-            if (format is SyntaxNode)
+            // Create the string argument 
+            var stringExpression = generator.LiteralExpression(format);
+            var stringArg = generator.Argument(stringExpression);
+            arguments = arguments.Add(stringArg);
+
+            // Create the template arguments
+            foreach (var argName in identifiers)
             {
-                return generator.InvocationExpression(expression, new SyntaxNode[] { format as SyntaxNode });
+                var nameExpression = generator.IdentifierName(argName);
+                var nameArg = generator.Argument(nameExpression);
+                arguments = arguments.Add(nameArg);
             }
-            else
-            {
-                SyntaxList<SyntaxNode> arguments = new SyntaxList<SyntaxNode>();
 
-                var stringExpression = generator.LiteralExpression(format);
-                var stringArg = generator.Argument(stringExpression);
-                arguments = arguments.Add(stringArg);
-
-                if (argumentNames != null)
-                {
-                    foreach (var argName in argumentNames)
-                    {
-                        var nameExpression = generator.IdentifierName(argName);
-                        var nameArg = generator.Argument(nameExpression);
-                        arguments = arguments.Add(nameArg);
-                    }
-                }
-
-                return generator.InvocationExpression(expression, arguments);
-            }
+            return generator.InvocationExpression(expression, arguments);
         }
         #endregion
     }

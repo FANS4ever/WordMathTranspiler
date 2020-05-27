@@ -2,7 +2,7 @@
 
 namespace WordMathTranspiler.MathMLParser.Nodes.Structure
 {
-    class UnaryOpNode: Node
+    public class UnaryOpNode: Node
     {
         public string Op { get; set; }
         public Node Expr { get; set; }

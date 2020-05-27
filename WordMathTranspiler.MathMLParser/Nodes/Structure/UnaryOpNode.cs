@@ -12,18 +12,26 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
             Expr = expression;
         }
 
+        #region Node overrides
         public override bool IsFloatPointOperation()
         {
             return Expr.IsFloatPointOperation();
         }
-
-        public override string Print()
+        public override string PrintHelper()
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("┌ Unary " + Op);
-            sb.Append("└─Expr: " + IndentHelper(Expr.Print(), 8));
+            sb.Append("└─Expr: " + IndentHelper(Expr.PrintHelper(), 8));
             return sb.ToString();
         }
+        public override string DotHelper(ref int id)
+        {
+            string unOpId = $"unOp{id++}";
+            string unOpDecl = $"{unOpId}[label=\"Unary:{Op}\"];\n";
+            var unOpExprData = Expr.DotHelper(ref id).Split('|');
+            return $"{unOpId}|{unOpDecl}{unOpExprData[1]}{unOpId} -> {unOpExprData[0]};\n";
+        }
+        #endregion
 
         public override bool Equals(object obj)
         {
@@ -36,7 +44,6 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
 
             return Op.Equals(item.Op) && Expr.Equals(item.Expr);
         }
-
         public override int GetHashCode()
         {
             return Op.GetHashCode() ^ Expr.GetHashCode();

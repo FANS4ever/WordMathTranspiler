@@ -24,20 +24,19 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
             Fn = fn;
             Args = new List<Node>() { arg };
         }
-
         public InvocationNode(string fn, List<Node> args)
         {
             Fn = fn;
             Args = args;
         }
 
+        #region Node overrides
         public override bool IsFloatPointOperation()
         {
             // For now assume that its true
             return true;
         }
-
-        public override string Print()
+        public override string PrintHelper()
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("┌ " + Fn);
@@ -48,20 +47,33 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
                 {
                     if (i == Args.Count - 1)
                     {
-                        sb.Append("└─Arg" + i + ": " + IndentHelper(Args[i].Print(), 7 + i.ToString().Length));
+                        sb.Append("└─Arg" + i + ": " + IndentHelper(Args[i].PrintHelper(), 7 + i.ToString().Length));
                     }
                     else
                     {
-                        sb.AppendLine("├─Arg" + i + ": " + IndentHelper(Args[i].Print(), count: 7 + i.ToString().Length, drawSeperator: true));
+                        sb.AppendLine("├─Arg" + i + ": " + IndentHelper(Args[i].PrintHelper(), indentCount: 7 + i.ToString().Length, drawSeperator: true));
                     }
                 }
             }
             else
             {
-                sb.Append("└─Arg1: " + IndentHelper(Args[0].Print(), 8));
+                sb.Append("└─Arg1: " + IndentHelper(Args[0].PrintHelper(), 8));
             }
             return sb.ToString();
         }
+        public override string DotHelper(ref int id)
+        {
+            string invocId = $"invoc{id++}";
+            string invocDecl = $"{invocId}[label=\"{Fn}\"]\n";
+            string invocResult = invocDecl;
+            for (int i = 0; i < Args.Count; i++)
+            {
+                var argData = Args[i].DotHelper(ref id).Split('|');
+                invocResult += $"{argData[1]}{invocId} -> {argData[0]};\n";
+            }
+            return $"{invocId}|{invocResult}";
+        }
+        #endregion
 
         public override bool Equals(object obj)
         {
@@ -85,7 +97,6 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
             }
             return false;
         }
-
         public override int GetHashCode()
         {
             return Fn.GetHashCode() ^ Args.GetHashCode();

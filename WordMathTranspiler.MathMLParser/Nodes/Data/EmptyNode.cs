@@ -7,15 +7,22 @@
         /// </summary>
         public EmptyNode() { }
 
+        #region Node overrides
         public override bool IsFloatPointOperation()
         {
             return false;
         }
-
-        public override string Print()
+        public override string PrintHelper()
         {
             return "EmptyNode";
         }
+
+        public override string DotHelper(ref int id)
+        {
+            string emptyId = $"E{id++}";
+            return $"{emptyId}|{emptyId}[label=\"Empty\"];\n";
+        }
+        #endregion
 
         public override bool Equals(object obj)
         {

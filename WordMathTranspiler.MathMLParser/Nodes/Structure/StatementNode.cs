@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Data;
-using System.Text;
-using WordMathTranspiler.MathMLParser.Nodes.Data;
+﻿using System.Text;
 
 namespace WordMathTranspiler.MathMLParser.Nodes.Structure
 {
@@ -12,7 +9,6 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
             None,
             DeclarationStatement
         }
-
         public StatementType Type {
             get {
                 switch (Body)
@@ -39,19 +35,28 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
             Next = next;
         }
 
+        #region Node overrides
         public override bool IsFloatPointOperation()
         {
             return Body.IsFloatPointOperation();
         }
-
-        public override string Print()
+        public override string PrintHelper()
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("┌ Statement type:" + Type.ToString() + " isFloat: " + IsFloatPointOperation());
-            sb.AppendLine("├─L: " + IndentHelper(Body.Print(), drawSeperator: true));
-            sb.Append("└─R: " + IndentHelper(Next.Print()));
+            sb.AppendLine("├─L: " + IndentHelper(Body.PrintHelper(), drawSeperator: true));
+            sb.Append("└─R: " + IndentHelper(Next.PrintHelper()));
             return sb.ToString();
         }
+        public override string DotHelper(ref int id)
+        {
+            string statId = $"stat{id++}";
+            string statDecl = $"{statId}[label=\"Statement\"];\n";
+            var statBodyData = Body.DotHelper(ref id).Split('|');
+            var statNextData = Next.DotHelper(ref id).Split('|');
+            return $"{statId}|{statDecl}{statBodyData[1]}{statNextData[1]}{statId} -> {statBodyData[0]};\n{statId} -> {statNextData[0]};\n";
+        }
+        #endregion
 
         public override bool Equals(object obj)
         {
@@ -64,7 +69,6 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
 
             return Body.Equals(item.Body) && Next.Equals(item.Next);
         }
-
         public override int GetHashCode()
         {
             return Body.GetHashCode() ^ Next.GetHashCode();

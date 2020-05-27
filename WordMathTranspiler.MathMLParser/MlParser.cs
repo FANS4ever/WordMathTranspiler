@@ -178,6 +178,8 @@ namespace WordMathTranspiler.MathMLParser
                     return HandleMfrac(lex);
                 case "msup":
                     return HandleMsup(lex);
+                case "mtable":
+                    throw new NotImplementedException("Todo: Add cases support");
                 default:
                     throw Error($"Unsupported tag {lex.Node.Name}", lex.GetLineInfo());
             }

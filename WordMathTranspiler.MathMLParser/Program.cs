@@ -44,7 +44,7 @@ namespace WordMathTranspiler.MathMLParser
                 {
                     using (StreamWriter outputToFile = new StreamWriter(Path.ChangeExtension(docxFilePath, "ast.txt")))
                     {
-                        outputToFile.WriteLine(astRoot.Print());
+                        outputToFile.WriteLine(astRoot.PrintHelper());
                     }
                 }
 
@@ -52,8 +52,8 @@ namespace WordMathTranspiler.MathMLParser
                 var writeToConsole = config.GetSection("writeResultToConsole");
                 if (writeToConsole.Exists() && writeToConsole.Value.Equals("True"))
                 {
-                    Console.WriteLine(astRoot.Print());
-                    Console.WriteLine(Node.DOTPrint(astRoot));
+                    Console.WriteLine(astRoot.PrintHelper());
+                    Console.WriteLine(Node.BuildDotGraph(astRoot));
                 }
 
 

@@ -55,15 +55,21 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Data
             Value = value;
         }
 
+        #region Node overrides
         public override bool IsFloatPointOperation()
         {
             return Type == NumType.Float;
         }
-
-        public override string Print()
+        public override string PrintHelper()
         {
             return Value.ToString();
         }
+        public override string DotHelper(ref int id)
+        {
+            string numId = $"num{id++}";
+            return $"{numId}|{numId}[label=\"{Value}\"];\n";
+        }
+        #endregion
 
         public override bool Equals(object obj)
         {
@@ -76,7 +82,6 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Data
 
             return item.Value.Equals(Value);
         }
-
         public override int GetHashCode()
         {
             return (Value).GetHashCode();

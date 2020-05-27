@@ -16,15 +16,21 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Data
             Name = name;
         }
 
+        #region Node overrides
         public override bool IsFloatPointOperation()
         {
             return false;
         }
-
-        public override string Print()
+        public override string PrintHelper()
         {
             return Name;
         }
+        public override string DotHelper(ref int id)
+        {
+            string identId = $"identifier{id++}";
+            return $"{identId}|{identId}[label=\"{Name}\"];\n";
+        }
+        #endregion
 
         public override bool Equals(object obj)
         {
@@ -37,7 +43,6 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Data
 
             return item.Name.Equals(Name) && item.Type.Equals(Type);
         }
-
         public override int GetHashCode()
         {
             return (Name, Type).GetHashCode();

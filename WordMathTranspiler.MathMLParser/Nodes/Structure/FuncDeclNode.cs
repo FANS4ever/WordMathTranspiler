@@ -14,7 +14,6 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
             Params = new List<Node>() { param };
             Body = body;
         }
-
         public FuncDeclNode(string name, List<Node> paramList, Node body)
         {
             Name = name;
@@ -22,23 +21,37 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
             Body = body;
         }
 
+        #region Node overrides
         public override bool IsFloatPointOperation()
         {
             // For now assume that its true
             return true;
         }
-
-        public override string Print()
+        public override string PrintHelper()
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("┌ " + $"Func: {Name}");
             for (int i = 0; i < Params.Count; i++)
             {
-                sb.AppendLine("├─Param" + i + ": " + IndentHelper(Params[i].Print(), count: 9 + i.ToString().Length, drawSeperator: true));
+                sb.AppendLine("├─Param" + i + ": " + IndentHelper(Params[i].PrintHelper(), indentCount: 9 + i.ToString().Length, drawSeperator: true));
             }
-            sb.Append("└─Body: " + IndentHelper(Body.Print(), 8));
+            sb.Append("└─Body: " + IndentHelper(Body.PrintHelper(), 8));
             return sb.ToString();
         }
+        public override string DotHelper(ref int id)
+        {
+            string fdeclId = $"funcDecl{id++}";
+            string fdeclDecl = $"{fdeclId}[label=\"FuncDecl:{Name}\"]\n";
+            string fdeclResult = fdeclDecl;
+            for (int i = 0; i < Params.Count; i++)
+            {
+                var paramData = Params[i].DotHelper(ref id).Split('|');
+                fdeclResult += $"{paramData[1]}{fdeclId} -> {paramData[0]}[label=\"Param{i}\"];\n";
+            }
+            var fdeclBody = Body.DotHelper(ref id).Split('|');
+            return $"{fdeclId}|{fdeclResult}{fdeclBody[1]}{fdeclId} -> {fdeclBody[0]}[label=\"Body\"];\n";
+        }
+        #endregion
 
         public override bool Equals(object obj)
         {
@@ -62,7 +75,6 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
             }
             return false;
         }
-
         public override int GetHashCode()
         {
             return Name.GetHashCode() ^ Params.GetHashCode() ^ Body.GetHashCode();

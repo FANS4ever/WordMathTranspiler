@@ -212,8 +212,47 @@ namespace WordMathTranspiler.MathMLParser
                             {
                                 throw Error("Values can only be assigned to a variable node.", lex.GetLineInfo());
                             }
-                            node = new InvocationNode(fn.Name, Factor(lex));
+
+                            // Helper
+                            MlLexer UnnestParameterList(MlLexer lex)
+                            {
+                                if (lex.NodeCount > 1)
+                                {
+                                    return lex;
+                                }
+                                switch (lex.Node.Name)
+                                {
+                                    case "mfenced":
+                                        MlLexer mfLex = lex.GetDeepLexer();
+                                        if (mfLex.NodeCount == 1)
+                                        {
+                                            lex.Eat("mfenced");
+                                            return UnnestParameterList(mfLex);
+                                        }
+                                        return mfLex;
+                                    case "mrow":
+                                        MlLexer mrLex = lex.GetDeepLexer();
+                                        if (mrLex.NodeCount == 1)
+                                        {
+                                            lex.Eat("mrow");
+                                            return UnnestParameterList(mrLex);
+                                        }
+                                        return mrLex;
+                                }
+                                return lex;
+                            }
+
+                            MlLexer argLex = UnnestParameterList(lex.GetDeepLexer());
+                            lex.Eat("mrow");
+                            List<Node> args = new List<Node>();
+                            while (!argLex.IsFinished)
+                            {
+                                args.Add(Expr(argLex));
+                            }
+                            node = new InvocationNode(fn.Name, args);
                             continue;
+                        case ",":
+                            return node;
                     }
                 }
                 //If not an operator assume multiplication

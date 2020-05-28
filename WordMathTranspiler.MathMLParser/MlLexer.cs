@@ -11,6 +11,8 @@ namespace WordMathTranspiler.MathMLParser
         private int index;
         private List<XElement> elementList;
         public bool IsFinished { get { return index >= elementList.Count; } }
+
+        public int NodeCount { get { return elementList.Count; } }
         
         private MlLexerNodeInfo _node;
         public MlLexerNodeInfo Node { get { return _node; } }
@@ -40,7 +42,7 @@ namespace WordMathTranspiler.MathMLParser
             else
             {
                 IXmlLineInfo lineInfo = GetLineInfo();
-                throw new Exception("[MlLexer] - Error in syntax." + (lineInfo.HasLineInfo() ? " Line:" + lineInfo.LineNumber : ""));
+                throw new Exception($"[MlLexer] - Error in syntax. Tried to eat \"{nodeName}\" but current node is \"{Node.Name}\"" + (lineInfo.HasLineInfo() ? " Line:" + lineInfo.LineNumber : ""));
             }
         }
 

@@ -164,8 +164,9 @@ namespace WordMathTranspiler.MathMLParser
                     {
                         case "-":
                         case "+":
+                            string value = lex.Node.Value;
                             lex.Eat("mo");
-                            return new UnaryOpNode(lex.Node.Value, Factor(lex));
+                            return new UnaryOpNode(value, Factor(lex));
                         case "(":
                             lex.Eat("mo");
                             Node node = Expr(lex);

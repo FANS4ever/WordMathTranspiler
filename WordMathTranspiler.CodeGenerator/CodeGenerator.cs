@@ -52,7 +52,7 @@ namespace WordMathTranspiler.CodeGenerator
         {
             if (root is StatementNode)
             {
-                List<SyntaxNode> classContext = new List<SyntaxNode>() { CreateReadInputMethod(generator) };
+                List<SyntaxNode> classContext = new List<SyntaxNode>() { CreateReadInputMethod(generator), CreateNthRootMethod(generator) };
                 List<SyntaxNode> mainContext = new List<SyntaxNode>();
 
                 SyntaxNode printStart = CreateConsole(
@@ -105,7 +105,7 @@ namespace WordMathTranspiler.CodeGenerator
                             {
                                 SyntaxNode printDefinition = CreateConsole(
                                     generator,
-                                    $"Define function: {currentStatement.Body.TextPrint()}"
+                                    $"Define function: {currentStatement.Body.TextPrint()}\n"
                                 );
                                 mainContext.Add(printDefinition);
 
@@ -235,32 +235,32 @@ namespace WordMathTranspiler.CodeGenerator
         }
         private SyntaxNode VisitInvocationNode(InvocationNode node)
         {
+            SyntaxList<SyntaxNode> arguments = new SyntaxList<SyntaxNode>();
+            foreach (var arg in node.Args)
+            {
+                var nameArg = generator.Argument(BuildExpression(arg));
+                arguments = arguments.Add(nameArg);
+            }
+
             if (node.IsBuiltinFunction)
             {
-                var identifier = generator.IdentifierName("Math");
-                var expression = generator.MemberAccessExpression(
-                    identifier,
-                    node.Fn?.Substring(0, 1).ToString().ToUpper() + node.Fn?.Substring(1).ToLower() //First letter to uppercase
+                return generator.InvocationExpression(
+                    expression: generator.MemberAccessExpression(
+                        expression: generator.IdentifierName("Math"),
+                        memberName: node.Fn?.Substring(0, 1).ToString().ToUpper() + node.Fn?.Substring(1).ToLower() //First letter to uppercase
+                    ),
+                    arguments: arguments
                 );
-
-                SyntaxList<SyntaxNode> arguments = new SyntaxList<SyntaxNode>();
-                foreach (var arg in node.Args)
-                {
-                    //Identifier for var nodes?
-                    //var nameExpression = generator.IdentifierName(argName);
-                    var nameArg = generator.Argument(BuildExpression(arg));
-                    arguments = arguments.Add(nameArg);
-                }
-                return generator.InvocationExpression(expression, arguments);
+            }
+            else if (node.Fn == "root") 
+            {
+                return generator.InvocationExpression(
+                    expression: generator.IdentifierName("NthRoot"),
+                    arguments: arguments
+                );
             }
             else
             {
-                SyntaxList<SyntaxNode> arguments = new SyntaxList<SyntaxNode>();
-                foreach (var arg in node.Args)
-                {
-                    var nameArg = generator.Argument(BuildExpression(arg));
-                    arguments = arguments.Add(nameArg);
-                }
                 return generator.InvocationExpression(
                     expression: generator.IdentifierName($"Func{node.Fn}"), 
                     arguments: arguments
@@ -294,7 +294,12 @@ namespace WordMathTranspiler.CodeGenerator
                     }
                     else 
                     {
-                        return CreateReadInput(generator, $"Enter value for {node.Name}: ");
+                        return generator.InvocationExpression(
+                            expression: generator.IdentifierName("ReadInput"), 
+                            generator.Argument(
+                                generator.LiteralExpression($"Enter value for {node.Name}: ")
+                            )
+                        );
                     }
             }
         }
@@ -385,6 +390,45 @@ namespace WordMathTranspiler.CodeGenerator
                 generator.LiteralExpression(message)
             );
             return generator.InvocationExpression(identifier, argument);
+        }
+        public static SyntaxNode CreateNthRootMethod(SyntaxGenerator generator)
+        {
+            //static double NthRoot(double x, double n)
+            //{
+            //    return Math.Pow(x, 1.0 / n);
+            //}
+            SyntaxNode method = generator.MethodDeclaration(
+                name: "NthRoot",
+                accessibility: Accessibility.Public,
+                modifiers: DeclarationModifiers.Static,
+                parameters: new SyntaxNode[] {
+                    generator.ParameterDeclaration(
+                        name: "x",
+                        type: generator.TypeExpression(SpecialType.System_Double)
+                    ),
+                    generator.ParameterDeclaration(
+                        name: "n",
+                        type: generator.TypeExpression(SpecialType.System_Double)
+                    )
+                },
+                returnType: generator.TypeExpression(SpecialType.System_Double),
+                statements: new SyntaxNode[] {
+                    generator.ReturnStatement(
+                        generator.InvocationExpression(
+                            expression: generator.MemberAccessExpression(
+                                expression: generator.IdentifierName("Math"),
+                                memberName: "Pow"
+                            ),
+                            generator.Argument(generator.IdentifierName("x")),
+                            generator.Argument(generator.DivideExpression(
+                                left: generator.LiteralExpression(1.0),
+                                right: generator.IdentifierName("n")
+                            ))
+                        )
+                    )
+                }
+            );
+            return method;
         }
 
         /// <summary>

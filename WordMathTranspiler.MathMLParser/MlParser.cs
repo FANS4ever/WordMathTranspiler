@@ -124,13 +124,32 @@ namespace WordMathTranspiler.MathMLParser
             var powerLex = supLex.GetDeepLexer();
             supLex.Eat("mrow");
 
-            return new InvocationNode(
-                "pow", 
-                new List<Node> { 
-                    Expr(baseLex), 
-                    Expr(powerLex) 
-                }
-            );
+            return new InvocationNode("pow", new List<Node> { 
+                Expr(baseLex), 
+                Expr(powerLex) 
+            });
+        }
+
+        private static Node HandleMsqrt(MlLexer lex)
+        {
+            MlLexer sqrtLex = lex.GetDeepLexer();
+            lex.Eat("msqrt");
+            return new InvocationNode("sqrt", Expr(sqrtLex));
+        }
+
+        private static Node HandleMroot(MlLexer lex)
+        {
+            MlLexer rootLex = lex.GetDeepLexer();
+            lex.Eat("mroot");
+            // Expects 2 <mrow> inside <mroot>
+            var exprLex = rootLex.GetDeepLexer();
+            rootLex.Eat("mrow");
+            var powerLex = rootLex.GetDeepLexer();
+            rootLex.Eat("mrow");
+            return new InvocationNode("root", new List<Node> { 
+                Expr(exprLex),
+                Expr(powerLex),
+            });
         }
         #endregion
 
@@ -179,6 +198,10 @@ namespace WordMathTranspiler.MathMLParser
                     return HandleMfrac(lex);
                 case "msup":
                     return HandleMsup(lex);
+                case "msqrt":
+                    return HandleMsqrt(lex);
+                case "mroot":
+                    return HandleMroot(lex);
                 case "mtable":
                     throw new NotImplementedException("Todo: Add cases support");
                 default:

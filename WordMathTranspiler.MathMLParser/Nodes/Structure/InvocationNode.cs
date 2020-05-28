@@ -9,7 +9,8 @@ namespace WordMathTranspiler.MathMLParser.Nodes.Structure
             "sin", "sec", "sech", // sin(x) | 1 arg
             "cos", "csc", "csch", // cos(x) | 1 arg
             "tan", "cot", "coth", // tan(x) | 1 arg
-            "pow" // x^2 | 2 args
+            "pow", // x^2 | 2 args
+            "sqrt" // Math.Sqrt(x) | 1 arg
         };
         public bool IsBuiltinFunction {
             get {

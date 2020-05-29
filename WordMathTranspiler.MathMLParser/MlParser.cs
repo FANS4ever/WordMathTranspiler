@@ -297,7 +297,7 @@ namespace WordMathTranspiler.MathMLParser
             while (!lex.IsFinished && (lex.Node.Name == "mo" && (lex.Node.Value == "+" || lex.Node.Value == "-")))
             {
                 string value = lex.Node.Value;
-                lex.Eat("mo");
+                lex.Eat("mo"); // Eat "+" | "-"
                 node = new BinOpNode(node, value, Term(lex));
             }
 
@@ -340,7 +340,7 @@ namespace WordMathTranspiler.MathMLParser
             List<Node> nodeList = new List<Node>() { node };
             while (!paramLex.IsFinished && paramLex.Node.Name == "mo" && paramLex.Node.Value == ",")
             {
-                paramLex.Eat("mo");
+                paramLex.Eat("mo"); // Eat ","
                 node = CreateParameterNode(paramLex);
                 nodeList.Add(node);
             }

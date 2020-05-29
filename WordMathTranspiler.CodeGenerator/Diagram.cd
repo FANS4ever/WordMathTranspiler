@@ -1,16 +1,16 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <ClassDiagram MajorVersion="1" MinorVersion="1">
   <Class Name="WordMathTranspiler.CodeGenerator.CodeGenerator">
-    <Position X="4.5" Y="1.25" Width="1.75" />
+    <Position X="4.5" Y="1.25" Width="2.25" />
     <TypeIdentifier>
-      <HashCode>AAAAABAAAAAAAAAISAAAAAAAAAAAAAAQAAACAEIgAgA=</HashCode>
+      <HashCode>AAAAIBAAAAAIAAAAQAABAAEIEIAMACAAAAACAEIBgAA=</HashCode>
       <FileName>CodeGenerator.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="WordMathTranspiler.CodeGenerator.CodeCompiler">
-    <Position X="6.5" Y="1.25" Width="2.25" />
+    <Position X="7" Y="1.25" Width="2.25" />
     <TypeIdentifier>
-      <HashCode>AAAEAAAAAAAAAAAAAAAAAQAAABAAAAAAAAAAEAAAAAA=</HashCode>
+      <HashCode>AAAEAAAAAAAAAAAAAAAAACAAABAAAAAAAAAAEAAAAAA=</HashCode>
       <FileName>CodeCompiler.cs</FileName>
     </TypeIdentifier>
   </Class>

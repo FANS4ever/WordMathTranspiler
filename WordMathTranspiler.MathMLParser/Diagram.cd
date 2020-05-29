@@ -1,72 +1,82 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <ClassDiagram MajorVersion="1" MinorVersion="1">
-  <Class Name="WordMathTranspiler.MathMLParser.MlParser">
-    <Position X="10" Y="4.25" Width="2.5" />
-    <TypeIdentifier>
-      <HashCode>QIAgAABQCAAAAAACAAQACAAAAAAkIAAAHgAAAACAJAA=</HashCode>
-      <FileName>MlParser.cs</FileName>
-    </TypeIdentifier>
-  </Class>
   <Class Name="WordMathTranspiler.MathMLParser.Nodes.Data.EmptyNode">
-    <Position X="5.25" Y="0.5" Width="1.75" />
+    <Position X="14.75" Y="0.5" Width="1.75" />
     <TypeIdentifier>
-      <HashCode>AAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAEAAA=</HashCode>
+      <HashCode>AAAAACAAAAAABAAEgAAAAAAAAAAEAIAAAAAAAAAAAAA=</HashCode>
       <FileName>Nodes\Data\EmptyNode.cs</FileName>
     </TypeIdentifier>
   </Class>
+  <Class Name="WordMathTranspiler.MathMLParser.Nodes.Data.IdentifierNode">
+    <Position X="14.75" Y="5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAACAAAAAABAAEgAAAAAQAAAAEAIAAAQAAAAAAAAA=</HashCode>
+      <FileName>Nodes\Data\IdentifierNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
   <Class Name="WordMathTranspiler.MathMLParser.Nodes.Data.NumNode">
-    <Position X="7.25" Y="0.5" Width="1.75" />
+    <Position X="19.25" Y="5" Width="1.75" />
     <NestedTypes>
-      <Enum Name="WordMathTranspiler.MathMLParser.Nodes.Data.NumNode.NumType" Collapsed="true">
+      <Enum Name="WordMathTranspiler.MathMLParser.Nodes.Data.NumNode.NumType">
         <TypeIdentifier>
           <NewMemberFileName>Nodes\Data\NumNode.cs</NewMemberFileName>
         </TypeIdentifier>
       </Enum>
     </NestedTypes>
     <TypeIdentifier>
-      <HashCode>ABAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAQAgAAAEAAA=</HashCode>
+      <HashCode>ABAAACAAAAAABAAEgAAAAAAAAAAEAIAAAQAgAAAAAAA=</HashCode>
       <FileName>Nodes\Data\NumNode.cs</FileName>
     </TypeIdentifier>
   </Class>
-  <Class Name="WordMathTranspiler.MathMLParser.Nodes.Data.VarNode">
-    <Position X="7.75" Y="4.25" Width="1.75" />
-    <TypeIdentifier>
-      <HashCode>AAAAAAAAAAAAAAAEAAAAAAQAAAAAAAAAAQAAAAAEAAA=</HashCode>
-      <FileName>Nodes\Data\VarNode.cs</FileName>
-    </TypeIdentifier>
-  </Class>
   <Class Name="WordMathTranspiler.MathMLParser.Nodes.Structure.AssignNode">
-    <Position X="1.75" Y="4.25" Width="1.75" />
+    <Position X="21" Y="0.5" Width="1.75" />
+    <InheritanceLine Type="WordMathTranspiler.MathMLParser.Nodes.Node" ManuallyRouted="true" FixedToPoint="true">
+      <Path>
+        <Point X="17.625" Y="0.5" />
+        <Point X="17.625" Y="0.284" />
+        <Point X="20.807" Y="0.284" />
+        <Point X="20.807" Y="1.75" />
+        <Point X="21" Y="1.75" />
+      </Path>
+    </InheritanceLine>
     <TypeIdentifier>
-      <HashCode>AAAAAAAAAACAAAAEAAAAAAAAAAAAAAAACAAAAAAEAAA=</HashCode>
+      <HashCode>AAAAACAAAACABAAEgAAAAAAAAAAEAIAACAAAAAAAAAA=</HashCode>
       <FileName>Nodes\Structure\AssignNode.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="WordMathTranspiler.MathMLParser.Nodes.Structure.BinOpNode">
-    <Position X="3.75" Y="4.25" Width="1.75" />
-    <TypeIdentifier>
-      <HashCode>AAAAAAAAAAABAAAEAAAAAAAAAAAAAAIAAAAAAAAECAA=</HashCode>
-      <FileName>Nodes\Structure\BinOpNode.cs</FileName>
-    </TypeIdentifier>
-  </Class>
-  <Class Name="WordMathTranspiler.MathMLParser.Nodes.Structure.InvocationNode">
-    <Position X="9.25" Y="0.5" Width="2.5" />
-    <InheritanceLine Type="WordMathTranspiler.MathMLParser.Nodes.Node" ManuallyRouted="true" FixedFromPoint="true">
+    <Position X="12.5" Y="0.5" Width="1.75" />
+    <InheritanceLine Type="WordMathTranspiler.MathMLParser.Nodes.Node" ManuallyRouted="true" FixedToPoint="true">
       <Path>
-        <Point X="3.5" Y="3.815" />
-        <Point X="3.5" Y="4.01" />
-        <Point X="9.127" Y="4.01" />
-        <Point X="9.127" Y="1.953" />
-        <Point X="9.25" Y="1.953" />
+        <Point X="17.625" Y="0.5" />
+        <Point X="17.625" Y="0.284" />
+        <Point X="14.521" Y="0.284" />
+        <Point X="14.521" Y="1.669" />
+        <Point X="14.25" Y="1.669" />
+        <Point X="14.25" Y="1.688" />
       </Path>
     </InheritanceLine>
     <TypeIdentifier>
-      <HashCode>QAAAAAAAAAAAAAAEAAIAAAAAABAAAAAAAAAAAAAEAAA=</HashCode>
+      <HashCode>AAAAACAAAAABBAAEgAAAAAAAAAAEAIIAAAAAAAAACAA=</HashCode>
+      <FileName>Nodes\Structure\BinOpNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="WordMathTranspiler.MathMLParser.Nodes.Structure.FuncDeclNode">
+    <Position X="16.75" Y="5" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAACIAAAAABAAEgAABAAQAAAAEAIAAAAAAAAAAAAA=</HashCode>
+      <FileName>Nodes\Structure\FuncDeclNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="WordMathTranspiler.MathMLParser.Nodes.Structure.InvocationNode">
+    <Position X="21.25" Y="5" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>QAAAACAAAAAABAAEgAIAAAAAABAEAIAAAAAAAAAEAAA=</HashCode>
       <FileName>Nodes\Structure\InvocationNode.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="WordMathTranspiler.MathMLParser.Nodes.Structure.StatementNode">
-    <Position X="5.75" Y="4.25" Width="1.75" />
+    <Position X="18.75" Y="0.5" Width="1.75" />
     <NestedTypes>
       <Enum Name="WordMathTranspiler.MathMLParser.Nodes.Structure.StatementNode.StatementType" Collapsed="true">
         <TypeIdentifier>
@@ -74,16 +84,50 @@
         </TypeIdentifier>
       </Enum>
     </NestedTypes>
+    <InheritanceLine Type="WordMathTranspiler.MathMLParser.Nodes.Node" FixedFromPoint="true">
+      <Path>
+        <Point X="18.5" Y="1.688" />
+        <Point X="18.75" Y="1.688" />
+      </Path>
+    </InheritanceLine>
     <TypeIdentifier>
-      <HashCode>AgAAAAAAAAAAAAAEAAABAAAAAAAAAAAAAQAAAAAEAAA=</HashCode>
+      <HashCode>AgAAACAAAAAABAAEgAABAAAAAAAEAIAAAQAAAAAAAAA=</HashCode>
       <FileName>Nodes\Structure\StatementNode.cs</FileName>
     </TypeIdentifier>
   </Class>
-  <Class Name="WordMathTranspiler.MathMLParser.Nodes.Node">
-    <Position X="2.75" Y="1.75" Width="1.5" />
+  <Class Name="WordMathTranspiler.MathMLParser.Nodes.Structure.UnaryOpNode">
+    <Position X="12.5" Y="5" Width="1.75" />
     <TypeIdentifier>
-      <HashCode>AAAAAQAAAAAACAAEAAAAACAAAAAAAEAAAAAAAAAEAAA=</HashCode>
+      <HashCode>AAAAACAAAAAABAAEgAAAAAAAAAAEAIAACAAAAAAACAA=</HashCode>
+      <FileName>Nodes\Structure\UnaryOpNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="WordMathTranspiler.MathMLParser.Nodes.Node">
+    <Position X="16.75" Y="0.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAACAAAAAIBAAEAAAAAAAAAQAEAEAAQAAAAAAAAAA=</HashCode>
       <FileName>Nodes\Node.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="WordMathTranspiler.MathMLParser.MlLexer">
+    <Position X="23" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAARAAEAAEAAQAAAAAAAAAQAAEAAAABAAIAAEBAAA=</HashCode>
+      <FileName>MlLexer.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="WordMathTranspiler.MathMLParser.MlLexerNodeInfo">
+    <Position X="24.75" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAwAAAAAAA=</HashCode>
+      <FileName>MlLexer.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="WordMathTranspiler.MathMLParser.MlParser">
+    <Position X="24.75" Y="0.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAgAABAQAAAASAEAAAAAACAAogEAAAAGAgAAAQCABA=</HashCode>
+      <FileName>MlParser.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Font Name="Segoe UI" Size="9" />

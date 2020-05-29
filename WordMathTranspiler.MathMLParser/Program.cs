@@ -36,7 +36,7 @@ namespace WordMathTranspiler.MathMLParser
                 var config = builder.Build();
 
                 Console.WriteLine("Generating AST...");
-                var astRoot = MlParser.Parse(args[0]);
+                var astRoot = MlParser.Parse(docxFilePath);
 
                 // Move to a settings method
                 var writeToFile = config.GetSection("writeResultToFile");

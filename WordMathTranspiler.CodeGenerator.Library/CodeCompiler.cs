@@ -15,33 +15,49 @@ namespace WordMathTranspiler.CodeGenerator
 {
     public class CodeCompiler
     {
-        public static void GenerateExecutable(IEnumerable<SyntaxTree> trees)
+        public static void GenerateExecutable(IEnumerable<SyntaxTree> trees, string outputDirectory, string compileLanguage, string assemblyName)
         {
-            string currentDir = Directory.GetCurrentDirectory();
-            string resultDir = currentDir + "/CompilationResult";
+            string resultDir = outputDirectory + "/CompilationResult";
 
+            // Prep directory
             DirectoryInfo di = new DirectoryInfo(resultDir);
-            foreach (FileInfo file in di.EnumerateFiles())
+            if (di.Exists)
             {
-                file.Delete();
+                di.Delete(true);
             }
-            foreach (DirectoryInfo dir in di.EnumerateDirectories())
-            {
-                dir.Delete(true);
-            }
+            di.Refresh();
+            di.Create();
 
             using (FileStream fs = new FileStream(Path.Combine(resultDir, "program.dll"), FileMode.Create))
             {
-                EmitResult result = CSharpCompilation.Create(
-                    assemblyName: "TestFile",
-                    syntaxTrees: trees,
-                    references: GenerateReferences(),
-                    options: new CSharpCompilationOptions(
-                        outputKind: OutputKind.ConsoleApplication,
-                        optimizationLevel: OptimizationLevel.Debug,
-                        assemblyIdentityComparer: DesktopAssemblyIdentityComparer.Default
-                    )
-                ).Emit(fs);
+                EmitResult result = null;
+                switch (compileLanguage)
+                {
+                    case "VisualBasic":
+                        result = VisualBasicCompilation.Create(
+                            assemblyName: assemblyName,
+                            syntaxTrees: trees,
+                            references: GenerateReferences(),
+                            options: new VisualBasicCompilationOptions(
+                                outputKind: OutputKind.ConsoleApplication,
+                                optimizationLevel: OptimizationLevel.Release,
+                                assemblyIdentityComparer: DesktopAssemblyIdentityComparer.Default
+                            )
+                        ).Emit(fs);
+                        break;
+                    default:
+                        result = CSharpCompilation.Create(
+                            assemblyName: assemblyName,
+                            syntaxTrees: trees,
+                            references: GenerateReferences(),
+                            options: new CSharpCompilationOptions(
+                                outputKind: OutputKind.ConsoleApplication,
+                                optimizationLevel: OptimizationLevel.Release,
+                                assemblyIdentityComparer: DesktopAssemblyIdentityComparer.Default
+                            )
+                        ).Emit(fs);
+                        break;
+                }
 
                 if (result.Success)
                 {
@@ -62,26 +78,25 @@ namespace WordMathTranspiler.CodeGenerator
                         values: result.Diagnostics.Select(diagnostic => diagnostic.ToString())
                     );
 
-                    // Consider writing error to file?
                     Console.WriteLine(errorList);
                 }
             }
         }
 
-        /// <summary>
-        /// Update to use that reference resolver thing mentioned in github
-        /// </summary>
-        /// <returns></returns>
         private static MetadataReference[] GenerateReferences()
         {
             var assemblyPath = Path.GetDirectoryName(typeof(object).Assembly.Location);
+
             return new MetadataReference[]
             {
                 MetadataReference.CreateFromFile(typeof(object).GetTypeInfo().Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(Console).GetTypeInfo().Assembly.Location),
                 MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "mscorlib.dll")),
                 MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "netstandard.dll")),
-                MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "System.Runtime.dll"))
+                MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "System.Runtime.dll")),
+                MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "Microsoft.CSharp.dll")),
+                MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "Microsoft.VisualBasic.dll")), //required for vb
+                MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "Microsoft.VisualBasic.Core.dll")) //required for vb
             };
         }
 

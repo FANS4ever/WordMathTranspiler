@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "WordMathTranspiler.CodeGenerator": {
+      "commandName": "Project",
+      "commandLineArgs": "E:\\Libraries\\Desktop\\BBP\\WordMathTranspiler\\WordMathTranspiler.DocumentParser\\Resources\\A.docx"
+    }
+  }
+}

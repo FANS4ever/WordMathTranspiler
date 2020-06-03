@@ -5,17 +5,20 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DebugType>portable</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.6.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="3.6.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="3.6.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="3.6.0" />
-    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-    <PackageReference Include="Microsoft.VisualBasic" Version="10.3.0" />
+    <ProjectReference Include="..\WordMathTranspiler.CodeGenerator.Library\WordMathTranspiler.CodeGenerator.Library.csproj" />
+    <ProjectReference Include="..\WordMathTranspiler.DocumentParser.Library\WordMathTranspiler.DocumentParser.Library.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\WordMathTranspiler.MathMLParser\WordMathTranspiler.MathMLParser.csproj" />
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

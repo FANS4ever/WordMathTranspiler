@@ -1,0 +1,105 @@
+using System;
+
+namespace TranspiledMML2
+{
+    public class Program2
+    {
+        public static double ReadInput(string message)
+        {
+            Console.WriteLine(message);
+            double val;
+            while (!(double.TryParse(Console.ReadLine(), out val)))
+            {
+                Console.WriteLine("Value must be a number!");
+                Console.WriteLine(message);
+            }
+
+            return val;
+        }
+
+        public static double NthRoot(double x, double n)
+        {
+            return Math.Pow(x, (1D) / (n));
+        }
+
+        public static readonly double A = InitA();
+        public static double InitA()
+        {
+            return ((((1L) + (2L)) + (3L)) + (4L)) + (5L);
+        }
+
+        public static readonly double B = InitB();
+        public static double InitB()
+        {
+            return ((2L) * (7L)) + (3L);
+        }
+
+        public static readonly double C = InitC();
+        public static double InitC()
+        {
+            return (2L) * ((7L) + (3L));
+        }
+
+        public static readonly double D = InitD();
+        public static double InitD()
+        {
+            return (3L) + ((2L) * (7L));
+        }
+
+        public static readonly double E = InitE();
+        public static double InitE()
+        {
+            return ((5L) + (1L)) * (3L);
+        }
+
+        public static readonly double F = InitF();
+        public static double InitF()
+        {
+            return Math.Sin((1L) + (3L));
+        }
+
+        public static readonly double G = InitG();
+        public static double InitG()
+        {
+            return (Math.PI) * (Math.Pow(ReadInput("Enter value for r in expression G = π * pow(r, 2): "), 2L));
+        }
+
+        public static readonly double H = InitH();
+        public static double InitH()
+        {
+            return Math.Sin((Math.Cos(((3L) + (1L)) + (5L))) * (5L));
+        }
+
+        public static readonly double J = InitJ();
+        public static double InitJ()
+        {
+            return Math.Pow(6L, ReadInput("Enter value for x in expression J = pow(6, x): "));
+        }
+
+        static void Main()
+        {
+            Console.WriteLine("Simulation start.");
+            Console.WriteLine("Evaluating: A = (((1 + 2) + 3) + 4) + 5");
+            Console.WriteLine("A = {0}\n", A);
+            Console.WriteLine("Evaluating: B = (2 * 7) + 3");
+            Console.WriteLine("B = {0}\n", B);
+            Console.WriteLine("Evaluating: C = 2 * (7 + 3)");
+            Console.WriteLine("C = {0}\n", C);
+            Console.WriteLine("Evaluating: D = 3 + (2 * 7)");
+            Console.WriteLine("D = {0}\n", D);
+            Console.WriteLine("Evaluating: E = (5 + 1) * 3");
+            Console.WriteLine("E = {0}\n", E);
+            Console.WriteLine("Evaluating: F = sin(1 + 3)");
+            Console.WriteLine("F = {0}\n", F);
+            Console.WriteLine("Evaluating: G = π * pow(r, 2)");
+            Console.WriteLine("G = {0}\n", G);
+            Console.WriteLine("Evaluating: H = sin(cos((3 + 1) + 5) * 5)");
+            Console.WriteLine("H = {0}\n", H);
+            Console.WriteLine("Evaluating: J = pow(6, x)");
+            Console.WriteLine("J = {0}\n", J);
+            Console.WriteLine("Evaluating: sin(a) * sin(f)");
+            Console.WriteLine("Answer = {0}\n", (Math.Sin(ReadInput("Enter value for a in expression sin(a) * sin(f): "))) * (Math.Sin(ReadInput("Enter value for f in expression sin(a) * sin(f): "))));
+            Console.WriteLine("Simulation finish.");
+        }
+    }
+}

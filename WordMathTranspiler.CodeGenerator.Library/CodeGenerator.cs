@@ -14,32 +14,39 @@ namespace WordMathTranspiler.CodeGenerator
         private AdhocWorkspace workspace;
         private SyntaxGenerator generator;
         private Dictionary<string, int> symbolTable;
+        private string evalStatement = "";
 
-        public CodeGenerator()
+        public CodeGenerator(string lang)
         {
-            Init();
+            Init(lang);
         }
-        public void Init()
+        public void Init(string lang)
         {
             workspace = new AdhocWorkspace();
-            generator = SyntaxGenerator.GetGenerator(workspace, LanguageNames.CSharp);
+            switch (lang)
+            {
+                case "VisualBasic":
+                    generator = SyntaxGenerator.GetGenerator(workspace, LanguageNames.VisualBasic);
+                    break;
+                default:
+                    generator = SyntaxGenerator.GetGenerator(workspace, LanguageNames.CSharp);
+                    break;
+            }
             symbolTable = new Dictionary<string, int>();
         }
-        public SyntaxTree Generate(Node root)
+        public SyntaxTree Generate(Node root, string namespaceName = "TranspiledMML", string className = "Program")
         {
             var usingDirectives = generator.NamespaceImportDeclaration("System");
-            var namespaceNode   = generator.NamespaceDeclaration("TranspiledMML", BuildClass(root));
+            var namespaceNode   = generator.NamespaceDeclaration(namespaceName, BuildClass(root, className));
             var compilationUnit = generator.CompilationUnit(usingDirectives, namespaceNode).NormalizeWhitespace();
-
-            Console.WriteLine(compilationUnit);
             return compilationUnit.SyntaxTree;
         }
-        private SyntaxNode BuildClass(Node root)
+        private SyntaxNode BuildClass(Node root, string className = "Program")
         {
             List<SyntaxNode> methodDeclarations = BuildMethods(root);
             // Add custom name setting
             return generator.ClassDeclaration(
-                name: "Program",
+                name: className,
                 typeParameters: null,
                 accessibility: Accessibility.Public,
                 modifiers: DeclarationModifiers.None,
@@ -64,6 +71,7 @@ namespace WordMathTranspiler.CodeGenerator
                 StatementNode currentStatement = root as StatementNode;
                 while (currentStatement != null)
                 {
+                    evalStatement = currentStatement.Body.TextPrint();
                     switch (currentStatement.Body)
                     {
                         case AssignNode assignNode:
@@ -297,7 +305,7 @@ namespace WordMathTranspiler.CodeGenerator
                         return generator.InvocationExpression(
                             expression: generator.IdentifierName("ReadInput"), 
                             generator.Argument(
-                                generator.LiteralExpression($"Enter value for {node.Name}: ")
+                                generator.LiteralExpression($"Enter value for {node.Name} in expression {evalStatement}: ")
                             )
                         );
                     }

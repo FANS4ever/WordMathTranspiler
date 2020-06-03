@@ -2,6 +2,7 @@
 using System;
 using System.IO;
 using WordMathTranspiler.MathMLParser.Nodes;
+using WordMathTranspiler.MathMLParser.Nodes.Data;
 
 namespace WordMathTranspiler.MathMLParser
 {
@@ -36,40 +37,84 @@ namespace WordMathTranspiler.MathMLParser
                 var config = builder.Build();
 
                 Console.WriteLine("Generating AST...");
-                var astRoot = MlParser.Parse(docxFilePath);
-
-                // Move to a settings method
-                var writeToFile = config.GetSection("writeResultToFile");
-                if (writeToFile.Exists() && writeToFile.Value.Equals("True"))
+                Node ast = new EmptyNode();
+                // Ignore errors
+                var ignoreErrorsSection = config.GetSection("ignoreErrors");
+                if (ignoreErrorsSection.Exists() && ignoreErrorsSection.Value.Equals("True"))
                 {
+                    ast = MlParser.Parse(docxFilePath, true);
+                }
+                else
+                {
+                    ast = MlParser.Parse(docxFilePath);
+                }
+                Console.WriteLine("Finished generating AST.");
+
+                // Result type
+                var resultTypeSection = config.GetSection("resultType");
+                var resultType = resultTypeSection.Exists() ? resultTypeSection.Value : "Text";
+
+                // Write to console
+                var writeToConsoleSection = config.GetSection("writeResultToConsole");
+                if (writeToConsoleSection.Exists() && writeToConsoleSection.Value.Equals("True"))
+                {
+                    Console.WriteLine("Printing result to console... \n");
+                    switch (resultType)
+                    {
+                        case "Text":
+                            Console.WriteLine(ast.TreePrint());
+                            break;
+                        case "DOT":
+                            Console.WriteLine(Node.BuildDotGraph(ast));
+                            break;
+                        case "JSON":
+                            Console.WriteLine(Node.SerializeJson(ast));
+                            break;
+                        default:
+                            Console.WriteLine("Result type not recognized, printing as text...");
+                            Console.WriteLine(ast.TreePrint());
+                            break;
+                    }
+                    Console.WriteLine();
+                }
+
+                // Write to file
+                var writeToFileSection = config.GetSection("writeResultToFile");
+                if (writeToFileSection.Exists() && writeToFileSection.Value.Equals("True"))
+                {
+                    Console.WriteLine("Writing result to file...");
                     using (StreamWriter outputToFile = new StreamWriter(Path.ChangeExtension(docxFilePath, "ast.txt")))
                     {
-                        outputToFile.WriteLine(astRoot.TreePrint());
+                        switch (resultType)
+                        {
+                            case "Text":
+                                outputToFile.WriteLine(ast.TreePrint());
+                                break;
+                            case "DOT":
+                                outputToFile.WriteLine(Node.BuildDotGraph(ast));
+                                break;
+                            case "JSON":
+                                outputToFile.WriteLine(Node.SerializeJson(ast));
+                                break;
+                            default:
+                                Console.WriteLine("Result type not recognized, writing as text...");
+                                outputToFile.WriteLine(ast.TreePrint());
+                                break;
+                        }
                     }
                 }
 
-                // Move to a settings method
-                var writeToConsole = config.GetSection("writeResultToConsole");
-                if (writeToConsole.Exists() && writeToConsole.Value.Equals("True"))
-                {
-                    Console.WriteLine(astRoot.TreePrint());
-                    Console.WriteLine(Node.BuildDotGraph(astRoot));
-                    Console.WriteLine(astRoot.TextPrint());
-                }
-
-
-                Console.WriteLine("Finished generating AST");
-                ProgramFinished();
+                Console.WriteLine("Finished.");
             }
             catch (FileNotFoundException)
             {
-                // Generate appsettings if it was not found
                 Console.WriteLine("[ERROR] Failed loading appsettings.json.");
             }
             catch (Exception x)
             {
                 Console.WriteLine("[ERROR] {0}", x.Message);
             }
+            ProgramFinished();
         }
 
         public static void ProgramFinished()

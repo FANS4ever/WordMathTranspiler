@@ -41,9 +41,7 @@ namespace WordMathTranspiler.DocumentParser
             }
             catch (FileNotFoundException)
             {
-                // Generate appsettings if it was not found
-                // consider generating omml2mml?
-                Console.WriteLine("Failed loading appsettings.json.");
+                Console.WriteLine("Failed to loading appsettings.json.");
             }
             ProgramFinished();
         }

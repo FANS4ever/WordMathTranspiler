@@ -435,14 +435,14 @@ namespace WordMathTranspiler.MathMLParser
             return root;
         }
         #endregion
-        public static Node Parse(XElement root)
+        public static Node Parse(XElement root, bool ignoreBrokenStatements = false)
         {
             MlLexer lex = new MlLexer(root);
-            return StatementList(lex);
+            return StatementList(lex, ignoreBrokenStatements);
         }
-        public static Node Parse(string path)
+        public static Node Parse(string path, bool ignoreBrokenStatements = false)
         {
-            return Parse(XDocument.Load(path, LoadOptions.SetLineInfo).Root);
+            return Parse(XDocument.Load(path, LoadOptions.SetLineInfo).Root, ignoreBrokenStatements);
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using System;
 using System.IO;
+using WordMathTranspiler.DocumentParser;
 using WordMathTranspiler.MathMLParser.Nodes;
 using WordMathTranspiler.MathMLParser.Nodes.Data;
 
@@ -13,7 +14,7 @@ namespace WordMathTranspiler.MathMLParser
             string docxFilePath = "";
             if (args.Length == 0)
             {
-                Console.Write("Specify a *.mathml.xml file: ");
+                Console.Write("Specify a *.docx file: ");
                 docxFilePath = Console.ReadLine();
             }
             else
@@ -21,7 +22,7 @@ namespace WordMathTranspiler.MathMLParser
                 docxFilePath = args[0];
             }
 
-            if (Path.GetExtension(docxFilePath) != ".xml")
+            if (Path.GetExtension(docxFilePath) != ".docx")
             {
                 Console.WriteLine("Unsupported file type {0}", Path.GetExtension(docxFilePath));
                 ProgramFinished();
@@ -36,19 +37,23 @@ namespace WordMathTranspiler.MathMLParser
                 .AddJsonFile("appsettings.json");
                 var config = builder.Build();
 
-                Console.WriteLine("Generating AST...");
+
+                Console.WriteLine("Reading file...");
+                DocxParser.ParseDocumentToFile(docxFilePath, Path.ChangeExtension(docxFilePath, ".mathml.xml"));
+
+                Console.WriteLine("Building AST...");
                 Node ast = new EmptyNode();
                 // Ignore errors
                 var ignoreErrorsSection = config.GetSection("ignoreErrors");
                 if (ignoreErrorsSection.Exists() && ignoreErrorsSection.Value.Equals("True"))
                 {
-                    ast = MlParser.Parse(docxFilePath, true);
+                    ast = MlParser.Parse(Path.ChangeExtension(docxFilePath, ".mathml.xml"), true);
                 }
                 else
                 {
-                    ast = MlParser.Parse(docxFilePath);
+                    ast = MlParser.Parse(Path.ChangeExtension(docxFilePath, ".mathml.xml"));
                 }
-                Console.WriteLine("Finished generating AST.");
+                Console.WriteLine("Finished building AST.");
 
                 // Result type
                 var resultTypeSection = config.GetSection("resultType");

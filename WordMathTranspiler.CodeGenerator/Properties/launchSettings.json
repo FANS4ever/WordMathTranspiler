@@ -2,7 +2,7 @@
   "profiles": {
     "WordMathTranspiler.CodeGenerator": {
       "commandName": "Project",
-      "commandLineArgs": "E:\\Libraries\\Desktop\\BBP\\WordMathTranspiler\\WordMathTranspiler.DocumentParser\\Resources\\A.docx"
+      "commandLineArgs": "E:\\Libraries\\Desktop\\Publish_BBP\\Pvz\\Modelis.docx"
     }
   }
 }

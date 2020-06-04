@@ -15,6 +15,8 @@ namespace WordMathTranspiler.CodeGenerator
         private SyntaxGenerator generator;
         private Dictionary<string, int> symbolTable;
         private string evalStatement = "";
+        List<SyntaxNode> classContext;
+        List<SyntaxNode> mainContext;
 
         public CodeGenerator(string lang)
         {
@@ -33,6 +35,7 @@ namespace WordMathTranspiler.CodeGenerator
                     break;
             }
             symbolTable = new Dictionary<string, int>();
+            evalStatement = "";
         }
         public SyntaxTree Generate(Node root, string namespaceName = "TranspiledMML", string className = "Program")
         {
@@ -59,8 +62,8 @@ namespace WordMathTranspiler.CodeGenerator
         {
             if (root is StatementNode)
             {
-                List<SyntaxNode> classContext = new List<SyntaxNode>() { CreateReadInputMethod(generator), CreateNthRootMethod(generator) };
-                List<SyntaxNode> mainContext = new List<SyntaxNode>();
+                classContext = new List<SyntaxNode>() { CreateReadInputMethod(generator), CreateNthRootMethod(generator) };
+                mainContext = new List<SyntaxNode>();
 
                 SyntaxNode printStart = CreateConsole(
                     generator,
@@ -83,6 +86,7 @@ namespace WordMathTranspiler.CodeGenerator
                                 mainContext.Add(printExpression);
 
                                 string methodName = $"Init{assignNode.Var.Name}";
+
                                 SyntaxNode method = generator.MethodDeclaration(
                                     name: methodName,
                                     accessibility: Accessibility.Public,
@@ -296,19 +300,24 @@ namespace WordMathTranspiler.CodeGenerator
                         generator.IdentifierName("Math"), "PI"
                     );
                 default:
-                    if (symbolTable.ContainsKey(node.Name))
+                    if (!symbolTable.ContainsKey(node.Name))
                     {
-                        return generator.IdentifierName(node.Name);
-                    }
-                    else 
-                    {
-                        return generator.InvocationExpression(
-                            expression: generator.IdentifierName("ReadInput"), 
-                            generator.Argument(
-                                generator.LiteralExpression($"Enter value for {node.Name} in expression {evalStatement}: ")
+                        symbolTable.Add(node.Name, 1);
+
+                        classContext.Add(generator.FieldDeclaration(
+                            name: node.Name,
+                            type: generator.TypeExpression(SpecialType.System_Double),
+                            accessibility: Accessibility.Public,
+                            modifiers: DeclarationModifiers.Static + DeclarationModifiers.ReadOnly,
+                            initializer: generator.InvocationExpression(
+                                expression: generator.IdentifierName("ReadInput"),
+                                generator.Argument(
+                                    generator.LiteralExpression($"Enter value for {node.Name}: ")
+                                )
                             )
-                        );
+                        ));
                     }
+                    return generator.IdentifierName(node.Name);
             }
         }
         private SyntaxNode VisitNumNode(NumNode node)

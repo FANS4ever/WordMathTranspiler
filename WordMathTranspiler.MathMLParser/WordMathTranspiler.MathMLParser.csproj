@@ -10,6 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\WordMathTranspiler.DocumentParser.Library\WordMathTranspiler.DocumentParser.Library.csproj" />
     <ProjectReference Include="..\WordMathTranspiler.MathMLParser.Library\WordMathTranspiler.MathMLParser.Library.csproj" />
   </ItemGroup>
 
